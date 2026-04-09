@@ -8,13 +8,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "sourceMap": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"],
-      "@ai-agent/shared": ["./code/shared/src/index.ts"]
-    }
+    "sourceMap": true
   },
-  "include": ["code/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

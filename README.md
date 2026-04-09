@@ -5,36 +5,88 @@
 ├─ package.json
 ├─ pnpm-workspace.yaml  # 声明 `code/*` 下的各子包为 pnpm 工作区成员
 ├─ pnpm-lock.yaml
-├─ tsconfig.json
+├─ tsconfig.json        # 公共 TypeScript 基础配置（各子包 extends 继承）
 ├─ .eslintrc.cjs
 ├─ prettier.config.mjs
 ├─ .prettierignore
 ├─ .gitignore
-├─ .env.example         # 环境变量示例（告诉你需要哪些 `OPENAI_*`、`ANTHROPIC_*` 等配置）
-├─ .vscode/             # VS Code 私有工作区设置（例如格式化/类型检查偏好）。
+├─ .env.example         # 环境变量示例
+├─ .env                 # 环境变量（git 忽略，各子包直接读取此文件）
+├─ .vscode/
 │  └─ settings.json
 └─ code/                # 练习/项目代码目录
-   ├─ chapter-01/
-   ├─ chapter-02/
-   └─ shared/           # 可复用的公共库包
-      ├─ package.json
-      └─ src/
-         ├─ index.ts    # 公共库导出入口（聚合并 re-export 各模块）
-         ├─ env.ts      # 加载并校验环境变量（依赖 `dotenv`，提供 `validateEnv()`）
-         ├─ constants/  # 常量配置（默认模型、token 限制、端点路径、角色颜色等）
-         │  └─ index.ts
-         ├─ logger/     # 日志工具封装（`Logger` 与 `logger` 实例）
-         │  └─ index.ts
-         ├─ prompts/    # 提示词模板与模板渲染工具（如 `PromptTemplate`、系统提示词）
-         │  └─ index.ts
-         ├─ types/      # 公共类型定义（如消息结构、LLM 相关响应类型）
-         │  └─ index.ts
-         └─ utils/      # 公共工具函数（如 `sleep`、`truncateText`、`generateId` 等）
-            └─ index.ts
+   ├─ 01_tool-test/     # 工具调用测试
+   ├─ chapter-01/       # 第一章练习
+   └─ chapter-02/       # 第二章练习
 ```
 
+## 🔑 环境变量
 
+`.env` 文件位于项目根目录，所有子项目共享。各子包通过 `dotenv` 直接加载：
 
-## 🚀🚀🚀 code子目录说明
+```js
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-111
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+
+// 使用 process.env.OPENAI_API_KEY 等
+```
+
+> ⚠️ 注意：`path.resolve` 中的 `../../../.env` 需根据当前文件相对于根目录的层级调整。
+
+## 🚀 如何创建新子项目
+
+### 方式一：手动创建（简单项目 / Node.js 脚本）
+
+```bash
+# 1. 创建目录
+mkdir code/my-project
+
+# 2. 初始化 package.json
+cd code/my-project
+pnpm init
+
+# 3. 编辑 package.json，确保包含以下字段
+#    "name": "@ai-agent/my-project"
+#    "private": true
+#    "type": "module"
+
+# 4. 创建 tsconfig.json（TypeScript 项目）
+# 内容参考：
+# {
+#   "extends": "../../tsconfig.json",
+#   "compilerOptions": { "baseUrl": "." },
+#   "include": ["src"]
+# }
+
+# 5. 回到根目录安装依赖
+cd ../..
+pnpm install
+```
+
+### 方式二：Vite 脚手架创建（前端项目）
+
+```bash
+# 1. 在 code/ 目录下用 Vite 创建项目
+cd code
+npx create-vite my-vite-app
+
+# 2. 编辑 my-vite-app/package.json
+#    将 name 改为 "@ai-agent/my-vite-app"
+#    添加 "private": true
+
+# 3. 回到根目录安装依赖
+cd ..
+pnpm install
+```
+
+## 🚀🚀🚀 code 子目录说明
+
+| 子目录 | 包名 | 说明 |
+|--------|------|------|
+| `01_tool-test` | `@ai-agent/01-tool-test` | LangChain 工具调用测试 |
+| `chapter-01` | `@ai-agent/chapter-01` | 第一章：基础练习 |
+| `chapter-02` | `@ai-agent/chapter-02` | 第二章：LangChain 入门 |

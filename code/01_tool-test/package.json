@@ -1,0 +1,16 @@
+{
+  "name": "@ai-agent/01-tool-test",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "工具调用测试",
+  "scripts": {
+    "dev": "node src/hello-langchain.mjs"
+  },
+  "dependencies": {
+    "@langchain/core": "^1.1.39",
+    "@langchain/openai": "^1.4.3",
+    "dotenv": "^17.3.1",
+    "zod": "^4.3.6"
+  }
+}
