@@ -8,7 +8,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "allowJs": true, // 让 TypeScript 能识别 .js / .mjs文件
+    "noEmit": true // 只做类型检查不输出编译结果，避免 "覆盖输入文件" 的错误
   },
+  "include": ["code/**/*.ts", "code/**/*.tsx", "code/**/*.js", "code/**/*.mjs"],
   "exclude": ["node_modules", "dist"]
 }

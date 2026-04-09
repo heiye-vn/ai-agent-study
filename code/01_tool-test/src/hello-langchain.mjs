@@ -1,3 +1,4 @@
+import { SystemMessage, HumanMessage, AIMessage } from 'langchain';
 import { ChatOpenAI } from '@langchain/openai';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -16,5 +17,11 @@ const model = new ChatOpenAI({
   },
 });
 
-const response = await model.invoke('介绍下自己');
+// const response = await model.invoke('介绍下自己');
+// console.log(response.content);
+
+const systemMsg = new SystemMessage('你是一位很有帮助的编程助手.');
+
+const messages = [systemMsg, new HumanMessage('请问我如何用SQL命令创建一个数据库表?')];
+const response = await model.invoke(messages);
 console.log(response.content);
