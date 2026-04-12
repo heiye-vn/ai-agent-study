@@ -88,8 +88,9 @@ pnpm install
 
 ## 🚀🚀🚀 code 子目录说明
 
-| 子目录         | 包名                     | 说明                   |
-| -------------- | ------------------------ | ---------------------- |
-| `01_tool-test` | `@ai-agent/01-tool-test` | LangChain 工具调用测试 |
-| `chapter-01`   | `@ai-agent/chapter-01`   | 第一章：基础练习       |
-| `chapter-02`   | `@ai-agent/chapter-02`   | 第二章：LangChain 入门 |
+| 子目录                                  | 说明                                                         |
+| --------------------------------------- | ------------------------------------------------------------ |
+| [01_tool-test](code/01_tool-test)       | LangChain 工具调用测试                                       |
+| [02_mini-cursor](./code/02_mini-cursor) | 实现 mini 版cursor，通过文件读写tool来创建一个 todolist 应用 |
+| [03_mcp-test](./code/03_mcp-test)       | 学习 MCP 相关知识，自定义 MCP Server，使用第三方 MCP Server，了解 MCP 客户端的两种连接方式（http、stdio）的区别 |
+
