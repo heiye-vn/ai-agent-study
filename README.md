@@ -49,12 +49,15 @@ mkdir code/my-project
 cd code/my-project
 pnpm init
 
+# 3. 安装依赖（可在node环境中运行 ts 文件：npx tsx 脚本.ts）
+pnpm add -D tsx typescript
+
 # 3. 编辑 package.json，确保包含以下字段
 #    "name": "@ai-agent/my-project"
 #    "private": true
 #    "type": "module"
 
-# 4. 创建 tsconfig.json（TypeScript 项目）
+# 4. 使用 npx tsc --init 创建 tsconfig.json（TypeScript 项目）
 # 内容参考：
 # {
 #   "extends": "../../tsconfig.json",
@@ -85,8 +88,8 @@ pnpm install
 
 ## 🚀🚀🚀 code 子目录说明
 
-| 子目录 | 包名 | 说明 |
-|--------|------|------|
+| 子目录         | 包名                     | 说明                   |
+| -------------- | ------------------------ | ---------------------- |
 | `01_tool-test` | `@ai-agent/01-tool-test` | LangChain 工具调用测试 |
-| `chapter-01` | `@ai-agent/chapter-01` | 第一章：基础练习 |
-| `chapter-02` | `@ai-agent/chapter-02` | 第二章：LangChain 入门 |
+| `chapter-01`   | `@ai-agent/chapter-01`   | 第一章：基础练习       |
+| `chapter-02`   | `@ai-agent/chapter-02`   | 第二章：LangChain 入门 |
