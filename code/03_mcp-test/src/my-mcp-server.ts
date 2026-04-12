@@ -76,5 +76,6 @@ mcpServer.registerResource(
   }
 );
 
+// 本地 mcp server，使用 stdio 传输协议进行通信
 const transport = new StdioServerTransport();
 await mcpServer.connect(transport);
