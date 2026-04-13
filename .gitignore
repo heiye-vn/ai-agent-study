@@ -11,6 +11,7 @@ build/
 
 # IDE
 .idea/
+.codebuddy
 
 # Claude Code (本地权限配置，不跟踪)
 .claude/settings.local.json
