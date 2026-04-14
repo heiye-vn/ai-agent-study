@@ -17,7 +17,6 @@ const model = new ChatOpenAI({
   },
 });
 
-//
 const embeddings = new OpenAIEmbeddings({
   apiKey: envVars.QWEN_API_KEY,
   model: envVars.EMBEDDINGS_MODEL_NAME as any,
@@ -100,6 +99,8 @@ const vectorStore = await MemoryVectorStore.fromDocuments(documents, embeddings)
 // 创建检索器，每次返回最相关的 3 个文档，k = 3 表示返回“余弦相似度最大”，即最相关的3个文档
 const retriever = vectorStore.asRetriever({ k: 3 });
 
+console.log(retriever, '--retriever'.repeat(10));
+
 const questions = ['东东和光光是怎么成为朋友的？'];
 
 for (const question of questions) {
@@ -107,11 +108,13 @@ for (const question of questions) {
   console.log(`问题: ${question}`);
   console.log('='.repeat(80));
 
-  // 使用 retriever 获取文档
-  const retrievedDocs = await retriever.invoke(question);
-
-  // 使用 similaritySearchWithScore 获取相似度评分
+  // 执行相似度搜索，获取文档及相似度评分
   const scoredResults = await vectorStore.similaritySearchWithScore(question, 3);
+  console.log(scoredResults, '--scoredResults'.repeat(10));
+
+  // 从带评分的结果中提取文档
+  const retrievedDocs = scoredResults.map(([doc]) => doc);
+  console.log(retrievedDocs, '--retrievedDocs'.repeat(10));
 
   // 打印用到的文档和相似度评分
   console.log('\n【检索到的文档及相似度评分】');

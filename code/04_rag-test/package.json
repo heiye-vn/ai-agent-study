@@ -12,8 +12,11 @@
   "packageManager": "pnpm@10.7.0",
   "dependencies": {
     "@langchain/classic": "^1.0.30",
+    "@langchain/community": "^1.1.27",
     "@langchain/core": "^1.1.39",
     "@langchain/openai": "^1.4.3",
+    "@langchain/textsplitters": "^1.0.1",
+    "cheerio": "^1.2.0",
     "dotenv": "^17.3.1"
   },
   "devDependencies": {
