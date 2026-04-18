@@ -1,6 +1,7 @@
 import { MilvusClient, DataType, MetricType, IndexType } from '@zilliz/milvus2-sdk-node';
 import { OpenAIEmbeddings } from '@langchain/openai';
-import {} from '@langchain/community/document_loaders/fs/epub';
+import { EPubLoader } from '@langchain/community/document_loaders/fs/epub';
+import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import dotenv from 'dotenv';
 import path, { parse } from 'path';
 import { fileURLToPath } from 'url';
@@ -11,12 +12,12 @@ const { parsed: envVars } = dotenv.config({ path: path.resolve(__dirname, '../..
 const COLLECTION_NAME = 'ebook_collection';
 const VECTOR_DIMENSION = 1024;
 const CHUNL_SIZE = 500; // 拆分的文本大小
-const EPUB_FILE = './天龙八部.epub';
+// const EPUB_FILE = './天龙八部.epub';
+const EPUB_FILE = path.resolve(__dirname, './天龙八部.epub');
 
 // 从文件名提取书名
 const BOOK_NAME = parse(EPUB_FILE).name;
 
-// 初始化 Embeddings 模型
 // 初始化文本向量化模型
 const embeddings = new OpenAIEmbeddings({
   apiKey: envVars.QWEN_API_KEY,
@@ -149,12 +150,57 @@ async function loadAndProcessEpubStreaming(bookId: number) {
     console.log(`\n开始加载 EPUB 文件： ${EPUB_FILE} ...\n`);
 
     // 使用 EPubLoader 加载文件，按章节拆分
+    const loader = new EPubLoader(EPUB_FILE, {
+      splitChapters: true,
+    });
+
+    const documents = await loader.load();
+    console.log(`✓ 加载完成，共 ${documents.length} 个章节\n`);
+
+    // 创建文本拆分器，拆分到 500 个字符
+    const textSpliter = new RecursiveCharacterTextSplitter({
+      chunkSize: CHUNL_SIZE,
+      chunkOverlap: 150, // 150 个字符的重叠，保持上下文连贯性
+    });
+
+    let totalInserted = 0;
+
+    // 遍历每个章节，进行二次拆分并立即插入
+    for (let chapterIndex = 0; chapterIndex < documents.length; chapterIndex++) {
+      const chapter = documents[chapterIndex];
+      const chapterContent = chapter.pageContent;
+
+      console.log(`处理第 ${chapterIndex + 1}/${documents.length} 章...`);
+
+      // 使用 splitter 进行二次拆分
+      const chunks = await textSpliter.splitText(chapterContent);
+
+      console.log(`  拆分为 ${chunks.length} 个片段`);
+
+      if (chunks.length === 0) {
+        console.log(`  跳过空章节\n`);
+        continue;
+      }
+
+      console.log(`  生成向量并插入中...`);
+
+      // 立即生成向量并插入该章节的所有片段
+      const insertedCount = await insertChunksBatch(chunks, bookId, chapterIndex + 1);
+      totalInserted += insertedCount;
+
+      console.log(`  ✓ 已插入 ${insertedCount} 条记录（累计: ${totalInserted}）\n`);
+    }
+    console.log(`\n总共插入 ${totalInserted} 条记录\n`);
+    return totalInserted;
   } catch (error) {
     console.error('加载 EPUB 文件时出错:', error.message);
     throw error;
   }
 }
 
+/**
+ * 主函数
+ */
 async function main() {
   try {
     console.log('='.repeat(80));
@@ -184,3 +230,5 @@ async function main() {
     process.exit(1);
   }
 }
+
+main();
