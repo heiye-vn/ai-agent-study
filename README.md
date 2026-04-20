@@ -96,6 +96,7 @@ pnpm install
 | [04_rag-test](./code/04_rag-test)                            | RAG(Retrieval Augmented Generation)，检索增强生成，loader、splitter 等概念的理解，实现一个简单的 RAG |
 | [05_milvus-test](.code/05_milvus-test)                       | 学习 milvus 向量数据库及相关操作，使用 milvus实现 rag 语义检索 |
 | [06_book-search(milvus+rag)](./code/06_book-search(milvus+rag)) | **Demo**：基于 milvus + rag 实现电子书语义检索助手           |
+| [07_memory-test)](./code/07_memory-test)                     | Memory 的实现策略：截取、总结、检索                          |
 
 
 
