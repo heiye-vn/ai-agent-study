@@ -2,7 +2,7 @@ import { InMemoryChatMessageHistory } from '@langchain/core/chat_history';
 import { HumanMessage, AIMessage, trimMessages } from '@langchain/core/messages';
 import { getEncoding } from 'js-tiktoken';
 
-// ========== 1. 按消息数量截断 ==========
+// ========== 截取策略1-1. 按消息数量截断 ==========
 async function messageCountTruncation() {
   const history = new InMemoryChatMessageHistory();
   const maxMessages = 4;
@@ -51,7 +51,7 @@ function countTokens(messages, encoder) {
   return total;
 }
 
-// ========== 2. 按 token 数量截断（使用 js-tiktoken 计数） ==========
+// ========== 截取策略1-2. 按 token 数量截断（使用 js-tiktoken 计数） ==========
 async function tokenCountTruncation() {
   const history = new InMemoryChatMessageHistory();
   const maxTokens = 100; // 限制最多 100 个 token

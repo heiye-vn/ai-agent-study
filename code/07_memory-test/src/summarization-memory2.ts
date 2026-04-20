@@ -1,6 +1,7 @@
 import { ChatOpenAI } from '@langchain/openai';
 import { HumanMessage, SystemMessage, AIMessage, getBufferString } from '@langchain/core/messages';
 import { InMemoryChatMessageHistory } from '@langchain/core/chat_history';
+import { getEncoding } from 'js-tiktoken';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -18,15 +19,25 @@ const model = new ChatOpenAI({
   },
 });
 
+// 计算消息数组的总 token 数量
+function countTokens(messages, encoder) {
+  let total = 0;
+  for (const msg of messages) {
+    const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
+    total += encoder.encode(content).length;
+  }
+  return total;
+}
+
 // 总结历史对话
 async function summarizeHistory(messages) {
   if (messages.length === 0) return '';
   const conversationText = getBufferString(messages);
   const summaryPrompt = `请总结以下对话的核心内容，保留重要信息：
-    
-    ${conversationText}
-    
-    总结：`;
+      
+      ${conversationText}
+      
+      总结：`;
   const summaryResponse = await model.invoke([
     new SystemMessage('你是一个擅长总结对话的助手'),
     new HumanMessage(summaryPrompt),
@@ -34,10 +45,13 @@ async function summarizeHistory(messages) {
   return summaryResponse.content;
 }
 
-// ========== 总结策略2-1（根据消息条数触发总结） ==========
+// ========== 总结策略2-2（根据 token 数量触发总结） ==========
 async function summarizationMemoryDemo() {
   const history = new InMemoryChatMessageHistory();
-  const maxMessages = 6; // 超过 6 条消息时触发总结
+  const maxTokens = 200; // 超过 200 个 token 就触发总结
+  const keepRecentTokens = 80; // 保留最近消息的 token 数量（约占总数的 40%）
+
+  const enc = getEncoding('cl100k_base');
 
   const messages = [
     { type: 'human', content: '我想学做红烧肉，你能教我吗？' },
@@ -81,41 +95,57 @@ async function summarizationMemoryDemo() {
   }
 
   let allMessages = await history.getMessages();
-  console.log(`原始消息数量: ${allMessages.length}`);
-  console.log(
-    '原始消息:',
-    allMessages.map((m) => `${m.constructor.name}: ${m.content}`).join('\n  ')
-  );
 
-  // 如果消息过多，触发总结
-  if (allMessages.length > maxMessages) {
-    const keepRecent = 2; // 保留最近 2 条消息
+  const totalTokens = countTokens(allMessages, enc);
 
-    // 分离要保留的消息和要总结的消息
-    const recentMessages = allMessages.slice(-keepRecent);
-    const messagesToSummarize = allMessages.slice(0, -keepRecent);
+  // 如果 token 数超过阈值，触发总结
+  if (totalTokens >= maxTokens) {
+    // 从后往前累加消息，保留最近的消息直到达到 keepRecentTokens
+    const recentMessages = [];
+    let recentTokens = 0;
 
-    console.log('\n💡 历史消息过多，开始总结...');
-    console.log(`📝 将被总结的消息数量: ${messagesToSummarize.length}`);
-    console.log(`📝 将被保留的消息数量: ${recentMessages.length}`);
+    for (let i = allMessages.length - 1; i >= 0; i--) {
+      const msg = allMessages[i];
+      const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
+      const msgTokens = enc.encode(content).length;
 
-    // 总结将被丢弃的消息
-    const summary = await summarizeHistory(messagesToSummarize);
+      if (recentTokens + msgTokens <= keepRecentTokens) {
+        recentMessages.unshift(msg);
+        recentTokens += msgTokens;
+      } else {
+        break;
+      }
+    }
 
-    // 清空历史消息，只保留最近的消息
+    const messagesToSummarize = allMessages.slice(0, allMessages.length - recentMessages.length);
+    const summarizeTokens = countTokens(messagesToSummarize, enc);
+
+    console.log('\n💡 Token 数量超过阈值，开始总结...');
+    console.log(`📝 将被总结的消息数量: ${messagesToSummarize.length} (${summarizeTokens} tokens)`);
+    console.log(`📝 将被保留的消息数量: ${recentMessages.length} (${recentTokens} tokens)`);
+
+    // 总结将被丢弃的就消息
+    const summary = await summarizeHistory(messagesToSummarize); // 清空历史消息，只保留最近的消息
+
     await history.clear();
     for (const msg of recentMessages) {
       await history.addMessage(msg);
     }
 
-    console.log(`\n保留消息数量: ${recentMessages.length}`);
+    console.log(`\n保留消息数量: ${recentMessages.length}`);
     console.log(
       '保留的消息:',
-      recentMessages.map((m) => `${m.constructor.name}: ${m.content}`).join('\n  ')
+      recentMessages
+        .map((m) => {
+          const content = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
+          const tokens = enc.encode(content).length;
+          return `${m.constructor.name} (${tokens} tokens): ${m.content}`;
+        })
+        .join('\n  ')
     );
-    console.log(`\n总结内容（不包含保留的消息）: ${summary}`);
+    console.log(`\n总结内容（不包含保留的消息）: ${summary}`);
   } else {
-    console.log('\n消息数量未超过阈值，无需总结');
+    console.log(`\nToken 数量 (${totalTokens}) 未超过阈值 (${maxTokens})，无需总结`);
   }
 }
 
