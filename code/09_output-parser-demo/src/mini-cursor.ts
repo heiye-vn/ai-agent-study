@@ -58,12 +58,15 @@ async function runAgentWithTools(query: string, maxIterations = 30) {
 
     const messages = await history.getMessages();
 
-    const rawStream = await modelWithTools.stream(messages); // 准备一个空的容器来拼接完整的 AIMessage
+    const rawStream = await modelWithTools.stream(messages);
 
-    let fullAIMessage = null; // 准备一个 tool_call_chunks 的 JSON 增量解析器
+    // 准备一个空的容器来拼接完整的 AIMessage
+    let fullAIMessage = null;
 
-    const toolParser = new JsonOutputToolsParser(); // 记录每个工具调用已打印的长度（用 id 或 filePath 作为 key）
+    // 准备一个 tool_call_chunks 的 JSON 增量解析器
+    const toolParser = new JsonOutputToolsParser();
 
+    // 记录每个工具调用已打印的长度（用 id 或 filePath 作为 key）
     const printedLengths = new Map();
 
     console.log(chalk.bgBlue(`\n🚀 Agent 开始思考并生成流...\n`));
@@ -118,16 +121,19 @@ async function runAgentWithTools(query: string, maxIterations = 30) {
           );
         }
       }
-    } // 此时 fullAIMessage 已经完美还原，直接存入 history
+    }
 
+    // 此时 fullAIMessage 已经完美还原，直接存入 history
     await history.addMessage(fullAIMessage);
-    console.log(chalk.green('\n✅ 消息已完整存入历史')); // 检查是否有工具调用
+    console.log(chalk.green('\n✅ 消息已完整存入历史'));
 
+    // 检查是否有工具调用
     if (!fullAIMessage.tool_calls || fullAIMessage.tool_calls.length === 0) {
       console.log(`\n✨ AI 最终回复:\n${fullAIMessage.content}\n`);
       return fullAIMessage.content;
-    } // 执行工具调用
+    }
 
+    // 执行工具调用
     for (const toolCall of fullAIMessage.tool_calls) {
       const foundTool = tools.find((t) => t.name === toolCall.name);
       if (foundTool) {
@@ -148,7 +154,8 @@ async function runAgentWithTools(query: string, maxIterations = 30) {
 
 const case1 = `创建一个功能丰富的 React TodoList 应用：
 
-1. 创建项目：(echo. & echo n & echo.) | pnpm create vite react-todo-app --template react-ts
+1. 创建项目（关键：只在父目录执行这一条命令；不要提前 mkdir；这一条也不要设置 workingDirectory）：
+   (echo. & echo n & echo.) | pnpm create vite react-todo-app --template react-ts
 2. 修改 src/App.tsx，实现完整功能的 TodoList：
  - 添加、删除、编辑、标记完成
  - 分类筛选（全部/进行中/已完成）
@@ -168,8 +175,8 @@ const case1 = `创建一个功能丰富的 React TodoList 应用：
 去掉 main.tsx 里的 index.css 导入
 
 之后在 react-todo-app 项目中：
-1. 使用 pnpm install 安装依赖
-2. 使用 pnpm run dev 启动服务器
+1. 使用 pnpm install 安装依赖（这里开始必须用 workingDirectory: "react-todo-app"，且 command 里不要再 cd）
+2. 使用 pnpm run dev 启动服务器（同上）
 `;
 
 try {
