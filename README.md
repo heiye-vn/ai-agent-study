@@ -98,3 +98,35 @@ pnpm install
 | [06_book-search(milvus+rag)](<./code/06_book-search(milvus+rag)>) | **Demo**：基于 milvus + rag 实现电子书语义检索助手           |
 | [07_memory-test](./code/07_memory-test)                      | Memory 的实现策略：截取、总结、检索                          |
 | [08_output-parser-test](./code/08_output-parser-test)        | 大模型的不同结构化输出方式（output parser、stream 等）       |
+| [09_output-parser-demo](./code/09_output-parser-demo)        | 大模型的几种输出解析器（output parser）                      |
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
