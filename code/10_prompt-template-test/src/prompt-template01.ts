@@ -17,6 +17,7 @@ const model = new ChatOpenAI({
   },
 });
 
+// 定义提示词模板，使用 {变量名} 作为占位符
 const naiveTemplate = PromptTemplate.fromTemplate(`
 你是一名严谨但不失人情味的工程团队负责人，需要根据本周数据写一份周报。
 
@@ -38,6 +39,7 @@ const naiveTemplate = PromptTemplate.fromTemplate(`
 - 语气专业但有一点人情味，适合作为给老板和团队抄送的周报。
 `);
 
+// 填充模板变量，format() 将模板中的占位符替换为实际数据
 const prompt = await naiveTemplate.format({
   company_name: '星航科技',
   team_name: '数据智能平台组',
@@ -51,10 +53,24 @@ const prompt = await naiveTemplate.format({
     '- 小周：配合产品输出 A/B 实验报表，支持 3 条对外汇报用数据',
 });
 
-console.log('格式化后的提示词:');
-console.log(prompt);
+const prompt2 = await naiveTemplate.format({
+  company_name: '极光云科技',
+  team_name: '订单结算后端组',
+  manager_name: '陈总',
+  week_range: '2025-04-07 ~ 2025-04-13',
+  team_goal: '本周以稳定性为主，集中清理历史技术债和高频告警。',
+  dev_activities:
+    '- 老王：修复高优先级线上 Bug 7 个（包含两起支付超时问题），提交 19 次，关联工单：PAY-1024 / PAY-1056\n' +
+    '- 小何：重构结算批任务调度逻辑，将执行时间从 35min 优化到 18min，提交 24 次\n' +
+    '- 小陈：梳理告警策略，合并冗余告警 12 条，新增 SLO 监控 3 项，提交 16 次\n' +
+    '- 实习生小刘：补齐历史接口的缺失单测，用例覆盖 12 个核心方法，整体覆盖率从 52% 提升到 61%',
+});
 
-const stream = await model.stream(prompt);
+console.log('格式化后的提示词:');
+console.log(prompt2);
+
+// 流式调用模型并输出结果
+const stream = await model.stream(prompt2);
 console.log('\nAI 回答:');
 for await (const chunk of stream) {
   const chunkStr =
