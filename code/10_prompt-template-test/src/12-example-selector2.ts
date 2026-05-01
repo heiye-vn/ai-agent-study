@@ -101,8 +101,10 @@ const finalPrompt2 = await fewShotPrompt.format({
 });
 console.log(finalPrompt2);
 
-// const stream = await model.stream(finalPrompt1);
-// console.log('\n=== AI 输出 ===');
-// for await (const chunk of stream) {
-//   process.stdout.write(chunk.content);
-// }
+const stream = await model.stream(finalPrompt2);
+console.log('\n=== AI 输出 ===');
+for await (const chunk of stream) {
+  const checkStr =
+    typeof chunk.content === 'string' ? chunk.content : JSON.stringify(chunk.content);
+  process.stdout.write(checkStr);
+}
