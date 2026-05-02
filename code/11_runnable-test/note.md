@@ -34,5 +34,102 @@
 
 ### Runnable 常用类型
 
+#### 1. RunnableSequence（链式执行）
+
+```typescript
+prompt.pipe(model).pipe(parser)
+
+// 等价于
+prompt | model | parser
+```
+
+#### 2. RunnalbleMap（并行执行）
+
+同时执行多个任务，返回对象
+
+```ts
+const chain = new RunnableMap({
+  joke: jokeChain,
+  poem: poemChain,
+});
+```
+
+#### 3. RunnableLambda（自定义函数）
+
+将普通函数变成 Runnable，可以插入任意逻辑
+
+```ts
+new RunnableLambda((input) => {
+    return input.toUpperCase()
+})
+```
+
+#### 4. RunnablePassthrough（透传 + 增强）
+
+```ts
+import { RunnablePassthrough } from "langchain/runnables";
+
+const chain = RunnablePassthrough.assign({
+  upper: (input) => input.text.toUpperCase(),
+});
+
+// 输入：
+{ "text": "hello" }
+
+// 输出：
+{
+    "text": "hello",
+    "upper": "HELLO"
+}
+```
+
+
+
+#### 5. RunnableParallel（并发执行多个 Runnable）
+
+```ts
+import { RunnableParallel } from "langchain/runnables";
+
+const chain = RunnableParallel.from({
+  joke: jokeChain,
+  poem: poemChain,
+});
+
+// 输入：
+{ "topic": "AI" }
+
+// 输出：
+{
+    joke: "...",
+    poem: "..."
+}
+```
+
+#### 6. RunnableBranch（条件分支）
+
+```ts
+import { RunnableBranch } from "langchain/runnables";
+
+const branch = RunnableBranch.from([
+  [
+    (input) => input.type === "joke",
+    jokeChain,
+  ],
+  [
+    (input) => input.type === "poem",
+    poemChain,
+  ],
+  defaultChain
+]);
+```
+
+注：RunnableMap ≈ RunnableParallel，RunnableMap 是早期写法，现在推荐使用 RunnableParallel
+
+
+
+
+
+
+
 
 
