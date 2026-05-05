@@ -33,7 +33,9 @@ const promptTemplate = ChatPromptTemplate.fromTemplate(
 );
 
 // 定义一个 chain，使用 RunnableSequence 链式执行
-const chain = RunnableSequence.from([promptTemplate, model, outputParser]);
+// const chain = RunnableSequence.from([promptTemplate, model, outputParser]);
+
+const chain = promptTemplate.pipe(model).pipe(outputParser);
 
 const input = {
   text: 'LangChain 是一个强大的 AI 应用开发框架',
