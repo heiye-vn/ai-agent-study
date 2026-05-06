@@ -28,6 +28,7 @@ const model = new ChatOpenAI({
   },
 });
 
+// 初始化 MCP 客户端并绑定工具
 const mcpClient = new MultiServerMCPClient({
   mcpServers: {
     'amap-maps-streamableHTTP': {
@@ -43,6 +44,7 @@ const mcpClient = new MultiServerMCPClient({
 const tools = await mcpClient.getTools();
 const modelWithTools = model.bindTools(tools);
 
+// 构建基础大模型链
 const prompt = ChatPromptTemplate.fromMessages([
   ['system', '你是一个可以调用 MCP 工具的智能助手'],
   new MessagesPlaceholder('messages'),
@@ -167,3 +169,14 @@ await runAgentWithTools(
 );
 
 // await mcpClient.close();
+
+/*
+    总结：通过非常纯粹的 LangChain LCEL 语法，手写实现了一个类似 LangGraph 基础版的状态机 Agent。它结构清晰、解耦度高：
+
+        把思考逻辑（LLM Chain）
+        把执行逻辑（Tool Executor）
+        把路由流转逻辑（RunnableBranch）
+        把循环控制逻辑（for 循环）
+
+    优雅地分离开了，并且无缝接入了目前最前沿的 MCP 协议，极具参考价值。
+*/
