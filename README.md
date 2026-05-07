@@ -99,8 +99,8 @@ pnpm install
 | [07_memory-test](./code/07_memory-test)                      | Memory 的实现策略：截取、总结、检索                          |
 | [08_output-parser-test](./code/08_output-parser-test)        | 大模型的不同结构化输出方式（output parser、stream 等）       |
 | [09_output-parser-demo](./code/09_output-parser-demo)        | 大模型的几种输出解析器（output parser），实现流式输出版 mini cursor |
-| [10_prompt-template-test](./code/10_prompt-template-test)    |                                                              |
-| [11_runnable-test](./code/11_runnable-test)                  | 11                                                           |
+| [10_prompt-template-test](./code/10_prompt-template-test)    | Prompt Template 提示词模板相关 api                           |
+| [11_runnable-test](./code/11_runnable-test)                  | Runnable 相关 API                                            |
 
 
 
