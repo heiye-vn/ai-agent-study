@@ -35,6 +35,7 @@ const promptTemplate = ChatPromptTemplate.fromTemplate(
 // 定义一个 chain，使用 RunnableSequence 链式执行
 // const chain = RunnableSequence.from([promptTemplate, model, outputParser]);
 
+// prompt 的 pipe 方法实现链式执行
 const chain = promptTemplate.pipe(model).pipe(outputParser);
 
 const input = {
