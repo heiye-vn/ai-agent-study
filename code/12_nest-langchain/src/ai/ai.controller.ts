@@ -1,5 +1,7 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Inject, Query, Sse } from '@nestjs/common';
 import { AiService } from './ai.service';
+import { ConfigService } from '@nestjs/config';
+import { from, map, Observable } from 'rxjs';
 
 @Controller('ai')
 export class AiController {
@@ -10,5 +12,11 @@ export class AiController {
     const anwser = await this.aiService.runChain(query);
 
     return { anwser };
+  }
+
+  /* Next 中使用 rxjs 来处理异步流 */
+  @Sse('chat/stream')
+  chatStream(@Query('query') query: string): Observable<{ data: string }> {
+    return from(this.aiService.streamChain(query)).pipe(map((chunk: any) => ({ data: chunk })));
   }
 }
