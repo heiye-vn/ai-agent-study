@@ -10,17 +10,21 @@ import { config } from 'dotenv';
 export class AiService {
   private readonly chain: Runnable;
 
-  constructor(@Inject(ConfigService) configService: ConfigService) {
+  constructor(
+    // @Inject(ConfigService) configService: ConfigService,
+    @Inject('CHAT_MODEL') model: ChatOpenAI
+  ) {
     const prompt = PromptTemplate.fromTemplate(`请回答以下问题：\n\n{query}`);
 
-    const model = new ChatOpenAI({
-      temperature: 0.7,
-      model: configService.get('QWEN_MODEL_NAME'),
-      apiKey: configService.get('QWEN_API_KEY'),
-      configuration: {
-        baseURL: configService.get('QWEN_BASE_URL'),
-      },
-    });
+    // const model = new ChatOpenAI({
+    //   temperature: 0.7,
+    //   model: configService.get('QWEN_MODEL_NAME'),
+    //   apiKey: configService.get('QWEN_API_KEY'),
+    //   configuration: {
+    //     baseURL: configService.get('QWEN_BASE_URL'),
+    //   },
+    // });
+
     this.chain = prompt.pipe(model).pipe(new StringOutputParser());
   }
 
