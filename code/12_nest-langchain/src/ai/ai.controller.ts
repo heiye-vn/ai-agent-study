@@ -1,6 +1,5 @@
 import { Controller, Get, Inject, Query, Sse } from '@nestjs/common';
 import { AiService } from './ai.service';
-import { ConfigService } from '@nestjs/config';
 import { from, map, Observable } from 'rxjs';
 
 @Controller('ai')
