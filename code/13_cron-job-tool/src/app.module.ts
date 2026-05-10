@@ -19,16 +19,17 @@ import { MailerModule } from '@nestjs-modules/mailer';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         transport: {
-          host: configService.get<string>('MAIL_HOST'),
-          port: Number(configService.get<string>('MAIL_PORT')),
-          secure: configService.get<string>('MAIL_SECURE') === 'true',
+          host: configService.get<string>('QQ_MAIL_HOST'),
+          port: Number(configService.get<string>('QQ_MAIL_PORT')),
+          secure: configService.get<string>('QQ_MAIL_SECURE') === 'true',
           auth: {
-            user: configService.get<string>('MAIL_USER'),
-            pass: configService.get<string>('MAIL_PASS'),
+            user: configService.get<string>('QQ_MAIL_USER'),
+            pass: configService.get<string>('QQ_MAIL_PASS'),
           },
         },
         defaults: {
-          from: configService.get<string>('MAIL_FROM'),
+          from: configService.get<string>('QQ_MAIL_FROM'),
+          // from: `No Reply <${configService.get('QQ_MAIL_FROM')}>`,
         },
       }),
     }),
