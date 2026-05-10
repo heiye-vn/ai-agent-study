@@ -50,8 +50,12 @@ const queryUserTool = tool(
 export class AiService {
   private readonly modelWithTools: Runnable<BaseMessage[], AIMessage>;
 
-  constructor(@Inject('CHAT_MODEL') model: ChatOpenAI) {
-    this.modelWithTools = model.bindTools([queryUserTool]);
+  constructor(
+    @Inject('CHAT_MODEL') model: ChatOpenAI,
+    @Inject('QUERY_DATABASE_USER_TOOL') private readonly queryDatabaseUserTool: any,
+    @Inject('SEND_MAIL_TOOL') private readonly sendMailTool: any
+  ) {
+    this.modelWithTools = model.bindTools([this.queryDatabaseUserTool, this.sendMailTool]);
   }
 
   async runChain(query: string): Promise<string> {
@@ -85,13 +89,23 @@ export class AiService {
 
         if (toolName === 'query_user') {
           const args = queryUserArgsSchema.parse(toolCall.args);
-          const result = await queryUserTool.invoke(args);
+          const result = await this.queryDatabaseUserTool.invoke(args);
 
           messages.push(
             new ToolMessage({
               tool_call_id: toolCallId,
               name: toolName,
               content: result,
+            })
+          );
+        } else if (toolName === 'send_mail') {
+          const result = await this.sendMailTool.invoke(toolCall.args);
+
+          messages.push(
+            new ToolMessage({
+              tool_call_id: toolCallId,
+              content: result,
+              name: toolName,
             })
           );
         }
@@ -146,7 +160,17 @@ export class AiService {
 
         if (toolName === 'query_user') {
           const args = queryUserArgsSchema.parse(toolCall.args);
-          const result = await queryUserTool.invoke(args);
+          const result = await this.queryDatabaseUserTool.invoke(args);
+
+          messages.push(
+            new ToolMessage({
+              tool_call_id: toolCallId,
+              content: result,
+              name: toolName,
+            })
+          );
+        } else if (toolName === 'send_mail') {
+          const result = await this.sendMailTool.invoke(toolCall.args);
 
           messages.push(
             new ToolMessage({

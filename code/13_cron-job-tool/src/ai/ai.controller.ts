@@ -1,10 +1,13 @@
 import { from, map, Observable } from 'rxjs';
-import { Controller, Get, Query, Sse } from '@nestjs/common';
+import { Controller, Get, Inject, Query, Sse } from '@nestjs/common';
 import { AiService } from './ai.service';
 
 @Controller('ai')
 export class AiController {
   constructor(private readonly aiService: AiService) {}
+
+  @Inject('SEND_MAIL_TOOL')
+  private readonly sendMailTool: any;
 
   @Get('chat')
   async chat(@Query('query') query: string) {
