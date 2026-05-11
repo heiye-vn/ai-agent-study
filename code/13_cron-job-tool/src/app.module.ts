@@ -5,10 +5,15 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { join } from 'path';
 import { AiModule } from './ai/ai.module';
 import { MailerModule } from '@nestjs-modules/mailer';
+import { ServeStaticModule } from '@nestjs/serve-static';
 
 @Module({
   imports: [
     AiModule,
+    // 静态资源访问
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'public'),
+    }),
     // 配置 ConfigModule
     ConfigModule.forRoot({
       isGlobal: true, // 设置为全局

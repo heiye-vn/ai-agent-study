@@ -53,9 +53,43 @@ export class AiService {
   constructor(
     @Inject('CHAT_MODEL') model: ChatOpenAI,
     @Inject('QUERY_DATABASE_USER_TOOL') private readonly queryDatabaseUserTool: any,
-    @Inject('SEND_MAIL_TOOL') private readonly sendMailTool: any
+    @Inject('SEND_MAIL_TOOL') private readonly sendMailTool: any,
+    @Inject('WEB_SEARCH_TOOL') private readonly webSearchTool: any
   ) {
-    this.modelWithTools = model.bindTools([this.queryDatabaseUserTool, this.sendMailTool]);
+    this.modelWithTools = model.bindTools([
+      this.queryDatabaseUserTool,
+      this.sendMailTool,
+      this.webSearchTool,
+    ]);
+  }
+
+  // 执行工具调用
+  private async executeToolCall(toolCall: any): Promise<ToolMessage> {
+    const toolCallId = toolCall.id || '';
+    const toolName = toolCall.name;
+
+    let result: string;
+
+    switch (toolName) {
+      case 'query_user':
+        const args = queryUserArgsSchema.parse(toolCall.args);
+        result = await this.queryDatabaseUserTool.invoke(args);
+        break;
+      case 'send_mail':
+        result = await this.sendMailTool.invoke(toolCall.args);
+        break;
+      case 'web_search':
+        result = await this.webSearchTool.invoke(toolCall.args);
+        break;
+      default:
+        result = `未知的工具: ${toolName}`;
+    }
+
+    return new ToolMessage({
+      tool_call_id: toolCallId,
+      content: result,
+      name: toolName,
+    });
   }
 
   async runChain(query: string): Promise<string> {
@@ -84,31 +118,8 @@ export class AiService {
 
       // 依次执行本轮需要调用的工具
       for (const toolCall of toolCalls) {
-        const toolCallId = toolCall.id || '';
-        const toolName = toolCall.name;
-
-        if (toolName === 'query_user') {
-          const args = queryUserArgsSchema.parse(toolCall.args);
-          const result = await this.queryDatabaseUserTool.invoke(args);
-
-          messages.push(
-            new ToolMessage({
-              tool_call_id: toolCallId,
-              name: toolName,
-              content: result,
-            })
-          );
-        } else if (toolName === 'send_mail') {
-          const result = await this.sendMailTool.invoke(toolCall.args);
-
-          messages.push(
-            new ToolMessage({
-              tool_call_id: toolCallId,
-              content: result,
-              name: toolName,
-            })
-          );
-        }
+        const toolMessage = await this.executeToolCall(toolCall);
+        messages.push(toolMessage);
       }
     }
   }
@@ -155,31 +166,8 @@ export class AiService {
 
       // 有工具调用：本轮不在额外输出内容，直接执行工具，生成 ToolMessage，进入下一轮
       for (const toolCall of toolCalls) {
-        const toolCallId = toolCall.id || '';
-        const toolName = toolCall.name || '';
-
-        if (toolName === 'query_user') {
-          const args = queryUserArgsSchema.parse(toolCall.args);
-          const result = await this.queryDatabaseUserTool.invoke(args);
-
-          messages.push(
-            new ToolMessage({
-              tool_call_id: toolCallId,
-              content: result,
-              name: toolName,
-            })
-          );
-        } else if (toolName === 'send_mail') {
-          const result = await this.sendMailTool.invoke(toolCall.args);
-
-          messages.push(
-            new ToolMessage({
-              tool_call_id: toolCallId,
-              content: result,
-              name: toolName,
-            })
-          );
-        }
+        const toolMessage = await this.executeToolCall(toolCall);
+        messages.push(toolMessage);
       }
     }
   }

@@ -1,3 +1,4 @@
+import { join } from 'path';
 import { config } from 'dotenv';
 import { ChatOpenAI } from '@langchain/openai';
 import { Module } from '@nestjs/common';
@@ -60,11 +61,33 @@ import { MailerService } from '@nestjs-modules/mailer';
       },
       inject: [UserService],
     },
+    /*
+        邮箱的使用规则：
+          1. 单个邮箱 -> 使用 z.email()
+          2. 多个邮箱(aaa.example.com,bbb.example.com) -> 使用 z.string() + 自定义 .refine() 验证规则
+          3. 数组格式(["aaa.example.com", "bbb.example.com"]) -> 使用 z.array(z.email())
+    */
     {
       provide: 'SEND_MAIL_TOOL',
       useFactory: (mailerService: MailerService, configService: ConfigService) => {
         const sendMailArgsSchema = z.object({
-          to: z.email().describe('收件人邮箱地址，如：someone@example.com'),
+          to: z
+            .string()
+            .refine(
+              (value) => {
+                // 支持单个邮箱或多个邮箱（用逗号分隔）
+                const emails = value.split(',').map((email) => email.trim());
+                return emails.every((email) => {
+                  // 使用正则表达式验证邮箱格式
+                  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                  return emailRegex.test(email);
+                });
+              },
+              {
+                message: '收件人邮箱地址格式不正确，请确保每个邮箱都符合标准格式',
+              }
+            )
+            .describe('收件人邮箱地址，可以是单个邮箱或多个邮箱（用逗号分隔）'),
           subject: z.string().describe('邮件主题'),
           text: z.string().optional().describe('纯文本内容，可选'),
           html: z.string().optional().describe('HTML 内容，可选'),
@@ -82,19 +105,20 @@ import { MailerService } from '@nestjs-modules/mailer';
             text?: string;
             html?: string;
           }) => {
-            const fallbackFrom = configService.get<string>('MAIL_FROM');
+            const fallbackFrom = configService.get<string>('QQ_MAIL_FROM');
+
+            // 将多个邮箱地址拆分成数组
+            const toEmails = to.split(',').map((email) => email.trim());
 
             await mailerService.sendMail({
-              to,
+              to: toEmails,
               subject,
               text: text ?? '（无文本内容）',
               html: html ?? `<p>${text ?? '（无 HTML 内容）'}</p>`,
               from: fallbackFrom,
             });
 
-            console.log(`邮件已发送到 ${to}，主题为「${subject}」`);
-
-            return `邮件已发送到 ${to}，主题为「${subject}」`;
+            return `邮件已发送到 ${toEmails.join(', ')}，主题为「${subject}」`;
           },
           {
             name: 'send_mail',
@@ -104,6 +128,89 @@ import { MailerService } from '@nestjs-modules/mailer';
         );
       },
       inject: [MailerService, ConfigService],
+    },
+    {
+      provide: 'WEB_SEARCH_TOOL',
+      useFactory: (configService: ConfigService) => {
+        const webSearchArgsSchema = z.object({
+          query: z.string().min(1).describe('搜索关键词，例如：公司年报、某个事件等'),
+          count: z
+            .number()
+            .int()
+            .min(1)
+            .max(20)
+            .optional()
+            .describe('返回的搜索结果数量，默认 10 条'),
+        });
+
+        return tool(
+          async ({ query, count }: { query: string; count?: number }) => {
+            const apiKey = configService.get<string>('BOCHA_API_KEY');
+            const url = configService.get<string>('BOCHA_REQ_URL');
+
+            if (!apiKey || !url) {
+              return 'Bocha Web Search 的 API Key 或 URL 未配置，请先在服务端配置后再重试。';
+            }
+
+            const body = {
+              query,
+              freshness: 'noLimit',
+              summary: true,
+              count: count ?? 10,
+            };
+
+            const response = await fetch(url, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(body),
+            });
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              return `搜索 API 请求失败，状态码：${response.status}，错误信息：${errorText}`;
+            }
+
+            let json: any;
+            try {
+              if (json.code !== 200 || json.data) {
+                return `搜 API 请求失败，错误信息：${json.msg || '未知错误'}`;
+              }
+
+              const webpages = json.data.webPages?.value ?? [];
+              if (!webpages.length) {
+                return '未找到相关结果。';
+              }
+
+              const formatted = webpages
+                .map(
+                  (page: any, idx: number) => `
+                  引用: ${idx + 1}
+                  标题: ${page.name}
+                  URL: ${page.url}
+                  摘要: ${page.summary}
+                  网站名称: ${page.siteName}
+                  网站图标: ${page.siteIcon}
+                  发布时间: ${page.dateLastCrawled}`
+                )
+                .join('\n\n');
+
+              return formatted;
+            } catch (error) {
+              return `搜索 API 请求失败，原因是：搜索结果解析失败 ${(error as Error).message}`;
+            }
+          },
+          {
+            name: 'web_search',
+            description:
+              '使用 Bocha Web Search API 搜索互联网网页。输入为搜索关键词（可选 count 指定结果数量），返回包含标题、URL、摘要、网站名称、图标和时间等信息的结果列表。',
+            schema: webSearchArgsSchema,
+          }
+        );
+      },
+      inject: [ConfigService],
     },
   ],
 })
