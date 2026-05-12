@@ -101,6 +101,9 @@ pnpm install
 | [09_output-parser-demo](./code/09_output-parser-demo)        | 大模型的几种输出解析器（output parser），实现流式输出版 mini cursor |
 | [10_prompt-template-test](./code/10_prompt-template-test)    | Prompt Template 提示词模板相关 api                           |
 | [11_runnable-test](./code/11_runnable-test)                  | Runnable 相关 API                                            |
+| [12_nest-langchain](./code/12_nest-langchain)                | Nest.js 集成 langchain                                       |
+| [13_cron-job-tool](./code/13_cron-job-tool)                  | nest + langchain 实现定时任务tool、邮件发送tool，网络搜索 tool 等 |
+|                                                              |                                                              |
 
 
 
