@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Inject } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -6,10 +6,28 @@ import { join } from 'path';
 import { AiModule } from './ai/ai.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { UsersModule } from './users/users.module';
+import { User } from './users/entities/user.entity';
 
 @Module({
   imports: [
-    AiModule,
+    // 数据库配置
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        type: 'mysql',
+        host: configService.get<string>('MYSQL_HOST'),
+        port: Number(configService.get<string>('MYSQL_PORT')),
+        username: configService.get<string>('MYSQL_USER'),
+        password: configService.get<string>('MYSQL_PASSWORD'),
+        database: 'cron_job_tool',
+        synchronize: true,
+        connectorPackage: 'mysql2',
+        logging: true,
+        entities: [User],
+      }),
+    }),
     // 静态资源访问
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
@@ -38,6 +56,8 @@ import { ServeStaticModule } from '@nestjs/serve-static';
         },
       }),
     }),
+    AiModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
