@@ -9,8 +9,10 @@ import { UserService } from './user.service';
 import z from 'zod';
 import { tool } from '@langchain/core/tools';
 import { MailerService } from '@nestjs-modules/mailer';
+import { UsersModule } from 'src/users/users.module';
 
 @Module({
+  imports: [UsersModule],
   controllers: [AiController],
   providers: [
     AiService,
