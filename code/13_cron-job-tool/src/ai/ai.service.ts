@@ -54,12 +54,14 @@ export class AiService {
     @Inject('CHAT_MODEL') model: ChatOpenAI,
     @Inject('QUERY_DATABASE_USER_TOOL') private readonly queryDatabaseUserTool: any,
     @Inject('SEND_MAIL_TOOL') private readonly sendMailTool: any,
-    @Inject('WEB_SEARCH_TOOL') private readonly webSearchTool: any
+    @Inject('WEB_SEARCH_TOOL') private readonly webSearchTool: any,
+    @Inject('DB_USERS_CRUD_TOOL') private readonly dbUsersCrudTool: any
   ) {
     this.modelWithTools = model.bindTools([
       this.queryDatabaseUserTool,
       this.sendMailTool,
       this.webSearchTool,
+      this.dbUsersCrudTool,
     ]);
   }
 
@@ -81,6 +83,8 @@ export class AiService {
       case 'web_search':
         result = await this.webSearchTool.invoke(toolCall.args);
         break;
+      case 'db_users_crud':
+        result = await this.dbUsersCrudTool.invoke(toolCall.args);
       default:
         result = `未知的工具: ${toolName}`;
     }
@@ -105,6 +109,8 @@ export class AiService {
       messages.push(aiMessage);
 
       const toolCalls = aiMessage.tool_calls ?? [];
+
+      console.log(toolCalls, '----toolCalls');
 
       // 如果没有要调用的工具，直接把回答返回给调用方
       if (!toolCalls.length) {
