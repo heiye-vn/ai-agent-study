@@ -1,4 +1,4 @@
-import { Module, Inject } from '@nestjs/common';
+import { Module, Inject, OnApplicationBootstrap } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -9,9 +9,13 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './users/users.module';
 import { User } from './users/entities/user.entity';
+import { CronExpression, ScheduleModule, SchedulerRegistry } from '@nestjs/schedule';
+import { CronJob } from 'cron';
 
 @Module({
   imports: [
+    // 定时任务模块
+    ScheduleModule.forRoot(),
     // 数据库配置
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
@@ -63,3 +67,36 @@ import { User } from './users/entities/user.entity';
   providers: [AppService],
 })
 export class AppModule {}
+
+// 测试三种定时任务
+// export class AppModule implements OnApplicationBootstrap {
+//   @Inject(SchedulerRegistry)
+//   schedulerRegistry: SchedulerRegistry;
+
+//   async onApplicationBootstrap() {
+//     const job = new CronJob(CronExpression.EVERY_SECOND, () => {
+//       console.log('run job');
+//     });
+//     this.schedulerRegistry.addCronJob('job1', job);
+//     job.start();
+//     setTimeout(() => {
+//       this.schedulerRegistry.deleteCronJob('job1');
+//     }, 5000);
+
+//     const intervalRef = setInterval(() => {
+//       console.log('run interval job');
+//     }, 1000);
+//     this.schedulerRegistry.addInterval('interval1', intervalRef);
+//     setTimeout(() => {
+//       this.schedulerRegistry.deleteInterval('interval1');
+//     }, 5000);
+
+//     const timeoutRef = setTimeout(() => {
+//       console.log('run timeout job');
+//     }, 3000);
+//     this.schedulerRegistry.addTimeout('timeout1', timeoutRef);
+//     setTimeout(() => {
+//       this.schedulerRegistry.deleteTimeout('timeout1');
+//     }, 5000);
+//   }
+// }
