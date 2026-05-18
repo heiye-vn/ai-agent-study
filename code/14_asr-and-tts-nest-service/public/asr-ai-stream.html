@@ -6,231 +6,498 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0"
     />
-    <title>AI 助手</title>
+    <title>智能 AI 助手</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <style>
       :root {
-        --bg: #f3f4f7;
-        --card: #ffffff;
-        --text: #1f2329;
-        --muted: #6b7280;
-        --primary: #3b82f6;
-        --primary-soft: #e8f1ff;
-        --assistant: #f8fafc;
-        --border: #e5e7eb;
-        --shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
+        --bg-gradient: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%);
+        --glass-bg: rgba(255, 255, 255, 0.75);
+        --glass-border: rgba(255, 255, 255, 0.6);
+        --glass-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        --primary: #4f46e5;
+        --primary-hover: #4338ca;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+        --user-msg-bg: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        --ai-msg-bg: rgba(255, 255, 255, 0.9);
+        --radius-lg: 24px;
+        --radius-md: 16px;
+        --radius-sm: 12px;
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
       * {
         box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
 
       body {
-        margin: 0;
         min-height: 100vh;
         font-family:
-          -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
-          'Microsoft YaHei', sans-serif;
-        color: var(--text);
-        background: radial-gradient(circle at top, #ffffff 0%, var(--bg) 45%);
+          'Inter',
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          'PingFang SC',
+          sans-serif;
+        color: var(--text-main);
+        background: var(--bg-gradient);
+        background-attachment: fixed;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Animated background blob */
+      .bg-blob {
+        position: fixed;
+        width: 800px;
+        height: 800px;
+        background: radial-gradient(
+          circle,
+          rgba(99, 102, 241, 0.15) 0%,
+          rgba(255, 255, 255, 0) 70%
+        );
+        border-radius: 50%;
+        top: -200px;
+        right: -200px;
+        z-index: 0;
+        animation: float 12s ease-in-out infinite alternate;
+      }
+
+      .bg-blob-2 {
+        position: fixed;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(
+          circle,
+          rgba(168, 85, 247, 0.15) 0%,
+          rgba(255, 255, 255, 0) 70%
+        );
+        border-radius: 50%;
+        bottom: -100px;
+        left: -150px;
+        z-index: 0;
+        animation: float 10s ease-in-out infinite alternate-reverse;
+      }
+
+      @keyframes float {
+        0% {
+          transform: translate(0, 0) scale(1);
+        }
+        100% {
+          transform: translate(-40px, 40px) scale(1.1);
+        }
       }
 
       .page {
-        max-width: 920px;
-        margin: 28px auto;
-        padding: 0 14px;
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        max-width: 900px;
+        padding: 20px;
       }
 
       .chat-shell {
-        border: 1px solid var(--border);
-        border-radius: 22px;
-        background: var(--card);
-        box-shadow: var(--shadow);
+        background: var(--glass-bg);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--glass-shadow);
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        height: 85vh;
+        max-height: 900px;
       }
 
       .header {
-        padding: 18px 20px 14px;
-        border-bottom: 1px solid var(--border);
-        background: linear-gradient(180deg, #ffffff 0%, #fafbfd 100%);
+        padding: 24px 30px;
+        background: rgba(255, 255, 255, 0.4);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .header-info {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
       }
 
       .title {
-        margin: 0;
-        font-size: 20px;
+        font-size: 22px;
         font-weight: 700;
+        letter-spacing: -0.5px;
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .title::before {
+        content: '';
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        background: #10b981;
+        border-radius: 50%;
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
       }
 
       .subtitle {
-        margin-top: 6px;
-        color: var(--muted);
+        color: var(--text-muted);
         font-size: 13px;
+        font-weight: 500;
       }
 
       .status-pill {
         display: inline-flex;
-        margin-top: 10px;
-        padding: 5px 10px;
+        align-items: center;
+        padding: 8px 16px;
         border-radius: 999px;
-        background: #f5f7fb;
-        color: #4b5563;
-        font-size: 12px;
+        background: rgba(255, 255, 255, 0.8);
+        color: var(--text-main);
+        font-size: 13px;
+        font-weight: 600;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        transition: var(--transition);
       }
 
       .messages {
-        padding: 22px 16px;
-        min-height: 430px;
-        max-height: 62vh;
+        flex: 1;
+        padding: 30px;
         overflow-y: auto;
-        background: linear-gradient(transparent 95%, rgba(0, 0, 0, 0.02) 100%), #fcfdff;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        scroll-behavior: smooth;
+      }
+
+      .messages::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .messages::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.15);
+        border-radius: 10px;
       }
 
       .empty {
+        margin: auto;
         text-align: center;
-        color: var(--muted);
-        margin-top: 38px;
-        font-size: 14px;
+        color: var(--text-muted);
+        font-size: 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        animation: fadeIn 0.5s ease-out;
+      }
+
+      .empty::before {
+        content: '✨';
+        font-size: 48px;
+        opacity: 0.9;
+        filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
 
       .msg-row {
         display: flex;
-        margin-bottom: 14px;
+        flex-direction: column;
+        animation: slideIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        opacity: 0;
+        transform: translateY(15px);
+      }
+
+      @keyframes slideIn {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
 
       .msg-row.user {
-        justify-content: flex-end;
+        align-items: flex-end;
       }
 
       .msg-row.assistant {
-        justify-content: flex-start;
+        align-items: flex-start;
       }
 
       .bubble {
-        max-width: min(680px, 84%);
-        border-radius: 16px;
-        padding: 12px 14px;
+        max-width: 82%;
+        padding: 16px 20px;
+        border-radius: var(--radius-md);
+        font-size: 15px;
+        line-height: 1.6;
+        word-wrap: break-word;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+        position: relative;
         white-space: pre-wrap;
-        line-height: 1.55;
-        font-size: 14px;
-        border: 1px solid var(--border);
       }
 
       .msg-row.user .bubble {
-        background: var(--primary-soft);
-        border-color: #cfe2ff;
+        background: var(--user-msg-bg);
+        color: #ffffff;
+        border-bottom-right-radius: 4px;
       }
 
       .msg-row.assistant .bubble {
-        background: var(--assistant);
+        background: var(--ai-msg-bg);
+        color: var(--text-main);
+        border-bottom-left-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.8);
       }
 
       .meta {
-        margin-top: 5px;
+        margin-top: 8px;
         font-size: 12px;
-        color: #8a93a1;
+        color: #94a3b8;
+        padding: 0 4px;
+        font-weight: 500;
+      }
+
+      .msg-row.user .meta {
+        text-align: right;
       }
 
       .composer {
-        border-top: 1px solid var(--border);
-        padding: 14px;
-        background: #ffffff;
+        background: rgba(255, 255, 255, 0.5);
+        border-top: 1px solid rgba(255, 255, 255, 0.6);
+        padding: 20px 30px;
+        backdrop-filter: blur(10px);
       }
 
       .toolbar {
         display: flex;
-        gap: 10px;
+        gap: 12px;
         align-items: flex-end;
       }
 
       .input-wrap {
         flex: 1;
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 10px 12px;
-        background: #fff;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: var(--radius-sm);
+        padding: 12px 16px;
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.01);
+        transition: var(--transition);
+      }
+
+      .input-wrap:focus-within {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        background: #ffffff;
       }
 
       .prompt-input {
         width: 100%;
         border: none;
         outline: none;
+        background: transparent;
         resize: none;
         min-height: 44px;
-        max-height: 130px;
-        font-size: 14px;
-        line-height: 1.55;
+        max-height: 120px;
+        font-size: 15px;
+        line-height: 1.5;
         font-family: inherit;
+        color: var(--text-main);
+      }
+
+      .prompt-input::placeholder {
+        color: #94a3b8;
       }
 
       .btn {
-        border: 1px solid var(--border);
-        background: #fff;
-        color: var(--text);
-        padding: 10px 14px;
-        border-radius: 11px;
-        font-size: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        height: 50px;
+        padding: 0 24px;
+        border-radius: var(--radius-sm);
+        font-size: 15px;
+        font-weight: 600;
         cursor: pointer;
+        transition: var(--transition);
+        border: none;
       }
 
       .btn:disabled {
-        opacity: 0.5;
+        opacity: 0.6;
         cursor: not-allowed;
+        transform: none !important;
+      }
+
+      .btn:not(:disabled):active {
+        transform: scale(0.96);
       }
 
       .btn-primary {
         background: var(--primary);
-        border-color: var(--primary);
-        color: #fff;
+        color: #ffffff;
+        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+      }
+
+      .btn-primary:not(:disabled):hover {
+        background: var(--primary-hover);
+        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
       }
 
       .btn-voice {
-        min-width: 96px;
+        background: #ffffff;
+        color: var(--text-main);
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      }
+
+      .btn-voice:not(:disabled):hover {
+        border-color: #cbd5e1;
+        background: #f8fafc;
+      }
+
+      .btn-voice.btn-primary {
+        background: #ef4444;
+        color: white;
+        border-color: #ef4444;
+        box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+        animation: pulse-record 1.5s infinite;
+      }
+
+      @keyframes pulse-record {
+        0% {
+          box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+        }
+        70% {
+          box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+        }
+      }
+
+      .footer-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 16px;
       }
 
       .hint {
-        margin-top: 10px;
-        color: var(--muted);
-        font-size: 12px;
+        color: #64748b;
+        font-size: 13px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
       }
 
       .audio-bar {
-        margin-top: 8px;
         display: flex;
         align-items: center;
-        gap: 8px;
-        font-size: 12px;
-        color: var(--muted);
+        justify-content: flex-end;
+        gap: 12px;
+        background: rgba(255, 255, 255, 0.7);
+        padding: 6px 16px;
+        border-radius: 999px;
+        font-size: 13px;
+        color: var(--text-main);
+        font-weight: 600;
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
       }
 
       .audio-bar audio {
-        flex: 1;
+        height: 32px;
+        max-width: 220px;
+        outline: none;
+      }
+
+      audio::-webkit-media-controls-panel {
+        background-color: #f8fafc;
       }
 
       .typing::after {
-        content: '● ● ●';
-        margin-left: 8px;
-        letter-spacing: 2px;
-        font-size: 11px;
-        color: #94a3b8;
-        animation: pulse 1s ease-in-out infinite;
+        content: '';
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(79, 70, 229, 0.2);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-left: 10px;
+        vertical-align: middle;
       }
 
-      @keyframes pulse {
-        0%,
-        100% {
-          opacity: 0.3;
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
         }
-        50% {
-          opacity: 1;
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (max-width: 768px) {
+        .page {
+          padding: 12px;
+        }
+        .chat-shell {
+          height: calc(100vh - 24px);
+          border-radius: var(--radius-md);
+        }
+        .header {
+          padding: 16px 20px;
+        }
+        .messages {
+          padding: 20px 16px;
+        }
+        .composer {
+          padding: 16px;
+        }
+        .footer-meta {
+          flex-direction: column;
+          gap: 14px;
+          align-items: stretch;
+        }
+        .audio-bar {
+          justify-content: center;
+        }
+        .btn {
+          padding: 0 16px;
         }
       }
     </style>
   </head>
   <body>
+    <div class="bg-blob"></div>
+    <div class="bg-blob-2"></div>
     <main class="page">
       <section class="chat-shell">
         <header class="header">
-          <h1 class="title">AI 助手</h1>
-          <div class="subtitle">录音后自动识别，再调用 AI 流式回复</div>
+          <div class="header-info">
+            <h1 class="title">AI 助手</h1>
+            <div class="subtitle">智能语音与文本交互系统</div>
+          </div>
           <div
             class="status-pill"
             id="status"
@@ -247,7 +514,7 @@
             class="empty"
             id="emptyTip"
           >
-            点击下方开始录音，体验语音问答。
+            <div>点击下方开始录音，或直接输入文字，体验智能对话</div>
           </div>
         </section>
 
@@ -257,7 +524,7 @@
               <textarea
                 class="prompt-input"
                 id="promptInput"
-                placeholder="输入问题，回车发送（Shift+Enter 换行）；也可以用语音按钮说话"
+                placeholder="输入问题，回车发送 (Shift+Enter 换行)..."
               ></textarea>
             </div>
             <button
@@ -273,17 +540,20 @@
               发送
             </button>
           </div>
-          <div class="hint">
-            文字直问：/ai/chat/stream；语音链路：/speech/asr ->
-            /ai/chat/stream；语音合成：/speech/tts/ws
-          </div>
-          <div class="audio-bar">
-            <span>AI 语音播放</span>
-            <audio
-              id="ttsAudio"
-              controls
-              preload="none"
-            ></audio>
+          <div class="footer-meta">
+            <div class="hint">
+              <span>🍵 文字直问：/ai/chat/stream</span>
+              <span>🚀 语音链路：/speech/asr -> /ai/chat/stream</span>
+              <span>⏰️ 语音合成：/speech/tts/ws</span>
+            </div>
+            <div class="audio-bar">
+              <span>🔊 AI 语音播报</span>
+              <audio
+                id="ttsAudio"
+                controls
+                preload="none"
+              ></audio>
+            </div>
           </div>
         </footer>
       </section>
