@@ -7,225 +7,132 @@
       content="width=device-width, initial-scale=1.0"
     />
     <title>AI 助手</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
     <style>
       :root {
-        --bg-start: #0f0c29;
-        --bg-mid: #1a1a40;
-        --bg-end: #24243e;
-        --card: rgba(255, 255, 255, 0.06);
-        --card-border: rgba(255, 255, 255, 0.1);
-        --text: #e8eaf0;
-        --text-secondary: #9ca3b4;
+        --bg: #f3f4f7;
+        --card: #ffffff;
+        --text: #1f2329;
         --muted: #6b7280;
-        --primary: #6c63ff;
-        --primary-glow: rgba(108, 99, 255, 0.35);
-        --primary-soft: rgba(108, 99, 255, 0.15);
-        --accent: #00d4aa;
-        --accent-glow: rgba(0, 212, 170, 0.3);
-        --user-bubble: linear-gradient(135deg, #6c63ff 0%, #4f46e5 100%);
-        --assistant-bubble: rgba(255, 255, 255, 0.07);
-        --border: rgba(255, 255, 255, 0.08);
-        --shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-        --radius: 20px;
-        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        --primary: #3b82f6;
+        --primary-soft: #e8f1ff;
+        --assistant: #f8fafc;
+        --border: #e5e7eb;
+        --shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
       }
 
       * {
         box-sizing: border-box;
-        margin: 0;
-        padding: 0;
       }
 
       body {
+        margin: 0;
         min-height: 100vh;
         font-family:
-          'Inter',
-          -apple-system,
-          BlinkMacSystemFont,
-          'Segoe UI',
-          'PingFang SC',
-          'Microsoft YaHei',
-          sans-serif;
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+          'Microsoft YaHei', sans-serif;
         color: var(--text);
-        background: linear-gradient(135deg, var(--bg-start), var(--bg-mid), var(--bg-end));
-        position: relative;
-        overflow-x: hidden;
-      }
-
-      /* 动态网格背景装饰 */
-      body::before {
-        content: '';
-        position: fixed;
-        inset: 0;
-        background:
-          radial-gradient(ellipse 600px 400px at 15% 20%, rgba(108, 99, 255, 0.15), transparent),
-          radial-gradient(ellipse 500px 350px at 85% 75%, rgba(0, 212, 170, 0.1), transparent),
-          radial-gradient(ellipse 400px 300px at 50% 10%, rgba(168, 85, 247, 0.08), transparent);
-        pointer-events: none;
-        z-index: 0;
+        background: radial-gradient(circle at top, #ffffff 0%, var(--bg) 45%);
       }
 
       .page {
-        position: relative;
-        z-index: 1;
         max-width: 920px;
-        margin: 24px auto;
-        padding: 0 16px;
+        margin: 28px auto;
+        padding: 0 14px;
       }
 
       .chat-shell {
-        border: 1px solid var(--card-border);
-        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        border-radius: 22px;
         background: var(--card);
-        backdrop-filter: blur(24px);
-        -webkit-backdrop-filter: blur(24px);
         box-shadow: var(--shadow);
         overflow: hidden;
       }
 
-      /* 头部 */
       .header {
-        padding: 22px 24px 18px;
+        padding: 18px 20px 14px;
         border-bottom: 1px solid var(--border);
-        background: linear-gradient(180deg, rgba(108, 99, 255, 0.08) 0%, transparent 100%);
-        position: relative;
+        background: linear-gradient(180deg, #ffffff 0%, #fafbfd 100%);
       }
 
       .title {
-        font-size: 22px;
+        margin: 0;
+        font-size: 20px;
         font-weight: 700;
-        background: linear-gradient(135deg, #fff 0%, #c4b5fd 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
       }
 
       .subtitle {
         margin-top: 6px;
-        color: var(--text-secondary);
+        color: var(--muted);
         font-size: 13px;
-        font-weight: 400;
       }
 
       .status-pill {
         display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        margin-top: 12px;
-        padding: 6px 14px;
+        margin-top: 10px;
+        padding: 5px 10px;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.06);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        color: var(--text-secondary);
+        background: #f5f7fb;
+        color: #4b5563;
         font-size: 12px;
-        font-weight: 500;
-        transition: var(--transition);
       }
 
-      .status-pill.typing {
-        background: var(--primary-soft);
-        border-color: rgba(108, 99, 255, 0.3);
-        color: #c4b5fd;
-      }
-
-      /* 消息区域 */
       .messages {
-        padding: 24px 20px;
+        padding: 22px 16px;
         min-height: 430px;
         max-height: 62vh;
         overflow-y: auto;
-        background: transparent;
-        scroll-behavior: smooth;
-      }
-
-      .messages::-webkit-scrollbar {
-        width: 5px;
-      }
-      .messages::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      .messages::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.12);
-        border-radius: 10px;
-      }
-      .messages::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.2);
+        background: linear-gradient(transparent 95%, rgba(0, 0, 0, 0.02) 100%), #fcfdff;
       }
 
       .empty {
         text-align: center;
         color: var(--muted);
-        margin-top: 60px;
+        margin-top: 38px;
         font-size: 14px;
-        line-height: 2;
       }
 
       .msg-row {
         display: flex;
-        margin-bottom: 16px;
-        animation: msgIn 0.35s ease-out;
-      }
-
-      @keyframes msgIn {
-        from {
-          opacity: 0;
-          transform: translateY(10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+        margin-bottom: 14px;
       }
 
       .msg-row.user {
         justify-content: flex-end;
       }
+
       .msg-row.assistant {
         justify-content: flex-start;
       }
 
       .bubble {
         max-width: min(680px, 84%);
-        border-radius: 18px;
-        padding: 14px 18px;
+        border-radius: 16px;
+        padding: 12px 14px;
         white-space: pre-wrap;
-        line-height: 1.6;
+        line-height: 1.55;
         font-size: 14px;
-        border: 1px solid transparent;
-        word-break: break-word;
+        border: 1px solid var(--border);
       }
 
       .msg-row.user .bubble {
-        background: var(--user-bubble);
-        color: #fff;
-        border-radius: 18px 18px 6px 18px;
-        box-shadow: 0 4px 20px var(--primary-glow);
+        background: var(--primary-soft);
+        border-color: #cfe2ff;
       }
 
       .msg-row.assistant .bubble {
-        background: var(--assistant-bubble);
-        border-color: var(--border);
-        border-radius: 18px 18px 18px 6px;
-        backdrop-filter: blur(8px);
+        background: var(--assistant);
       }
 
       .meta {
-        margin-top: 6px;
-        font-size: 11px;
-        color: rgba(255, 255, 255, 0.35);
-        font-weight: 400;
+        margin-top: 5px;
+        font-size: 12px;
+        color: #8a93a1;
       }
 
-      /* 底部输入区 */
       .composer {
         border-top: 1px solid var(--border);
-        padding: 16px 20px;
-        background: rgba(0, 0, 0, 0.15);
-        backdrop-filter: blur(12px);
+        padding: 14px;
+        background: #ffffff;
       }
 
       .toolbar {
@@ -238,15 +145,8 @@
         flex: 1;
         border: 1px solid var(--border);
         border-radius: 14px;
-        padding: 10px 14px;
-        background: rgba(255, 255, 255, 0.05);
-        transition: var(--transition);
-      }
-
-      .input-wrap:focus-within {
-        border-color: rgba(108, 99, 255, 0.5);
-        box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.12);
-        background: rgba(255, 255, 255, 0.07);
+        padding: 10px 12px;
+        background: #fff;
       }
 
       .prompt-input {
@@ -257,140 +157,61 @@
         min-height: 44px;
         max-height: 130px;
         font-size: 14px;
-        line-height: 1.6;
+        line-height: 1.55;
         font-family: inherit;
-        background: transparent;
-        color: var(--text);
-      }
-
-      .prompt-input::placeholder {
-        color: var(--muted);
       }
 
       .btn {
         border: 1px solid var(--border);
-        background: rgba(255, 255, 255, 0.06);
+        background: #fff;
         color: var(--text);
-        padding: 10px 18px;
-        border-radius: 12px;
+        padding: 10px 14px;
+        border-radius: 11px;
         font-size: 14px;
-        font-weight: 500;
-        font-family: inherit;
         cursor: pointer;
-        transition: var(--transition);
-        white-space: nowrap;
-      }
-
-      .btn:hover:not(:disabled) {
-        background: rgba(255, 255, 255, 0.1);
-        border-color: rgba(255, 255, 255, 0.2);
-        transform: translateY(-1px);
-      }
-
-      .btn:active:not(:disabled) {
-        transform: scale(0.97);
       }
 
       .btn:disabled {
-        opacity: 0.4;
+        opacity: 0.5;
         cursor: not-allowed;
       }
 
       .btn-primary {
-        background: linear-gradient(135deg, #6c63ff, #4f46e5);
-        border-color: transparent;
+        background: var(--primary);
+        border-color: var(--primary);
         color: #fff;
-        box-shadow: 0 4px 16px var(--primary-glow);
-      }
-
-      .btn-primary:hover:not(:disabled) {
-        box-shadow: 0 6px 24px rgba(108, 99, 255, 0.5);
-        background: linear-gradient(135deg, #7c74ff, #5b52f0);
       }
 
       .btn-voice {
-        min-width: 100px;
-        position: relative;
-        overflow: hidden;
-      }
-
-      .btn-voice.btn-primary::before {
-        content: '';
-        position: absolute;
-        inset: -2px;
-        border-radius: 14px;
-        background: linear-gradient(135deg, #ef4444, #f97316);
-        z-index: -1;
-        animation: recPulse 1.5s ease-in-out infinite;
-      }
-
-      .btn-voice.btn-primary {
-        background: linear-gradient(135deg, #ef4444, #dc2626);
-        box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
-      }
-
-      @keyframes recPulse {
-        0%,
-        100% {
-          opacity: 0.6;
-          transform: scale(1);
-        }
-        50% {
-          opacity: 1;
-          transform: scale(1.05);
-        }
+        min-width: 96px;
       }
 
       .hint {
         margin-top: 10px;
         color: var(--muted);
-        font-size: 11px;
-        opacity: 0.7;
+        font-size: 12px;
       }
 
       .audio-bar {
-        margin-top: 10px;
+        margin-top: 8px;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
         font-size: 12px;
-        color: var(--text-secondary);
-        font-weight: 500;
+        color: var(--muted);
       }
 
       .audio-bar audio {
         flex: 1;
-        height: 36px;
-        border-radius: 8px;
-        filter: invert(1) hue-rotate(180deg) brightness(0.85);
       }
 
-      /* 打字动画 */
       .typing::after {
-        content: '';
-        display: inline-block;
-        width: 6px;
-        height: 6px;
-        margin-left: 10px;
-        border-radius: 50%;
-        background: var(--accent);
-        box-shadow:
-          12px 0 0 var(--accent),
-          24px 0 0 var(--accent);
-        animation: dotBounce 1.2s ease-in-out infinite;
-      }
-
-      @keyframes dotBounce {
-        0%,
-        80%,
-        100% {
-          opacity: 0.3;
-          transform: scale(0.8);
-        }
-        40% {
-          opacity: 1;
-          transform: scale(1.1);
-        }
+        content: '● ● ●';
+        margin-left: 8px;
+        letter-spacing: 2px;
+        font-size: 11px;
+        color: #94a3b8;
+        animation: pulse 1s ease-in-out infinite;
       }
 
       @keyframes pulse {
@@ -408,8 +229,8 @@
     <main class="page">
       <section class="chat-shell">
         <header class="header">
-          <h1 class="title">✦ AI 助手</h1>
-          <div class="subtitle">语音识别 → AI 流式回复 → 语音合成，全链路体验</div>
+          <h1 class="title">AI 助手</h1>
+          <div class="subtitle">录音后自动识别，再调用 AI 流式回复</div>
           <div
             class="status-pill"
             id="status"
@@ -426,7 +247,7 @@
             class="empty"
             id="emptyTip"
           >
-            🎙️ 点击下方「语音输入」开始录音<br />或直接输入文字，体验 AI 对话
+            点击下方开始录音，体验语音问答。
           </div>
         </section>
 
@@ -436,28 +257,28 @@
               <textarea
                 class="prompt-input"
                 id="promptInput"
-                placeholder="输入问题，回车发送（Shift+Enter 换行）"
+                placeholder="输入问题，回车发送（Shift+Enter 换行）；也可以用语音按钮说话"
               ></textarea>
             </div>
             <button
               class="btn btn-voice"
               id="recordBtn"
             >
-              🎤 语音输入
+              语音输入
             </button>
             <button
               class="btn btn-primary"
               id="sendBtn"
             >
-              发送 →
+              发送
             </button>
           </div>
           <div class="hint">
-            文字直问：/ai/chat/stream · 语音链路：/speech/asr → /ai/chat/stream ·
-            语音合成：/speech/tts/ws
+            文字直问：/ai/chat/stream；语音链路：/speech/asr ->
+            /ai/chat/stream；语音合成：/speech/tts/ws
           </div>
           <div class="audio-bar">
-            <span>🔊 AI 语音</span>
+            <span>AI 语音播放</span>
             <audio
               id="ttsAudio"
               controls
@@ -486,10 +307,11 @@
       let isRecording = false;
       let ttsWs = null;
       let ttsSessionId = null;
-      let audioCtx = null;
-      let audioDest = null;
-      let nextPlayTime = 0;
+      let ttsMediaSource = null;
+      let ttsSourceBuffer = null;
+      let ttsPendingBuffers = [];
       let ttsStreamFinal = false;
+      let ttsObjectUrl = null;
 
       function setStatus(text, isTyping = false) {
         statusEl.textContent = '状态：' + text;
@@ -551,63 +373,65 @@
       }
 
       function resetTtsPlayer() {
+        ttsPendingBuffers = [];
         ttsStreamFinal = false;
-        nextPlayTime = 0;
-        if (audioCtx && audioCtx.state !== 'closed') {
-          // 不关闭整个 context，以免后续无法播放，只是重置时间
-          nextPlayTime = audioCtx.currentTime;
+        ttsSourceBuffer = null;
+        ttsMediaSource = null;
+        if (ttsObjectUrl) {
+          URL.revokeObjectURL(ttsObjectUrl);
+          ttsObjectUrl = null;
         }
         ttsAudioEl.pause();
+        ttsAudioEl.removeAttribute('src');
+        ttsAudioEl.load();
       }
 
       function prepareStreamingAudio() {
         resetTtsPlayer();
-        if (!audioCtx) {
-          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          audioDest = audioCtx.createMediaStreamDestination();
-          ttsAudioEl.srcObject = audioDest.stream;
+        if (!window.MediaSource || !MediaSource.isTypeSupported('audio/mpeg')) {
+          return;
         }
-        if (audioCtx.state === 'suspended') {
-          audioCtx.resume();
-        }
+
+        ttsMediaSource = new MediaSource();
+        ttsObjectUrl = URL.createObjectURL(ttsMediaSource);
+        ttsAudioEl.src = ttsObjectUrl;
+
+        ttsMediaSource.addEventListener('sourceopen', () => {
+          if (!ttsMediaSource) return;
+          ttsSourceBuffer = ttsMediaSource.addSourceBuffer('audio/mpeg');
+          ttsSourceBuffer.mode = 'sequence';
+          ttsSourceBuffer.addEventListener('updateend', flushTtsBufferQueue);
+          flushTtsBufferQueue();
+        });
       }
 
-      function playPcmChunk(arrayBuffer) {
-        if (!audioCtx) return;
+      function flushTtsBufferQueue() {
+        if (!ttsSourceBuffer || !ttsMediaSource) return;
+        if (ttsSourceBuffer.updating) return;
 
-        // 腾讯云 TTS PCM 格式：16000Hz 16bit 单声道 little-endian
-        const int16Array = new Int16Array(arrayBuffer);
-        const float32Array = new Float32Array(int16Array.length);
-        for (let i = 0; i < int16Array.length; i++) {
-          float32Array[i] = int16Array[i] / 32768; // 归一化到 [-1, 1]
+        if (ttsPendingBuffers.length > 0) {
+          const next = ttsPendingBuffers.shift();
+          if (next) {
+            ttsSourceBuffer.appendBuffer(next);
+            ttsAudioEl.play().catch(() => {
+              // 静默处理自动播放限制
+            });
+          }
+          return;
         }
 
-        const audioBuffer = audioCtx.createBuffer(1, float32Array.length, 16000);
-        audioBuffer.getChannelData(0).set(float32Array);
-
-        const source = audioCtx.createBufferSource();
-        source.buffer = audioBuffer;
-
-        // 连到 destination (扬声器) 和 audioDest (为了 audio 标签可视化)
-        // source.connect(audioCtx.destination);
-        // 仅连到 audioDest，由 audio 标签全权负责播放声音，避免两路声音重叠导致重音
-        source.connect(audioDest);
-
-        // 队列播放，确保没有断音
-        const currentTime = audioCtx.currentTime;
-        if (nextPlayTime < currentTime) {
-          nextPlayTime = currentTime;
+        if (ttsStreamFinal && ttsMediaSource.readyState === 'open') {
+          try {
+            ttsMediaSource.endOfStream();
+          } catch {
+            // ignore
+          }
         }
-        source.start(nextPlayTime);
-        nextPlayTime += audioBuffer.duration;
-
-        // 尝试自动播放 audio 标签以更新其进度UI
-        ttsAudioEl.play().catch(() => {});
       }
 
       function setRecordingUI(recording) {
         isRecording = recording;
-        recordBtn.textContent = recording ? '⏹ 停止录音' : '🎤 语音输入';
+        recordBtn.textContent = recording ? '停止录音' : '语音输入';
         recordBtn.classList.toggle('btn-primary', recording);
       }
 
@@ -655,14 +479,17 @@
                   prepareStreamingAudio();
                 } else if (msg.type === 'tts_final' || msg.type === 'tts_closed') {
                   ttsStreamFinal = true;
+                  flushTtsBufferQueue();
                 } else if (msg.type === 'tts_error') {
                   ttsStreamFinal = true;
+                  flushTtsBufferQueue();
                 }
               } catch {
                 // ignore
               }
             } else if (event.data instanceof ArrayBuffer) {
-              playPcmChunk(event.data);
+              ttsPendingBuffers.push(event.data);
+              flushTtsBufferQueue();
             }
           };
 

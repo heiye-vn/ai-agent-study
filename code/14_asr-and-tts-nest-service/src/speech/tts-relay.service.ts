@@ -235,7 +235,7 @@ export class TtsRelayService implements OnModuleDestroy {
     const params: Record<string, string | number> = {
       Action: 'TextToStreamAudioWSv2',
       AppId: this.appId,
-      Codec: 'pcm',
+      Codec: 'mp3',
       Expired: now + 3600,
       SampleRate: 16000,
       SecretId: this.secretId,
