@@ -1,3 +1,4 @@
+import { MailerService } from '@nestjs-modules/mailer';
 import { join } from 'path';
 import { config } from 'dotenv';
 import { ChatOpenAI } from '@langchain/openai';
@@ -8,7 +9,6 @@ import { ConfigService } from '@nestjs/config';
 import { UserService } from './user.service';
 import z from 'zod';
 import { tool } from '@langchain/core/tools';
-import { MailerService } from '@nestjs-modules/mailer';
 import { UsersModule } from 'src/users/users.module';
 import { UsersService } from 'src/users/users.service';
 
@@ -179,7 +179,7 @@ import { UsersService } from 'src/users/users.service';
             let json: any;
             try {
               if (json.code !== 200 || json.data) {
-                return `搜 API 请求失败，错误信息：${json.msg || '未知错误'}`;
+                return `搜索 API 请求失败，错误信息：${json.msg || '未知错误'}`;
               }
 
               const webpages = json.data.webPages?.value ?? [];
