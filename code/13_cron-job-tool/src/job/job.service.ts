@@ -9,10 +9,14 @@ import { SchedulerRegistry } from '@nestjs/schedule';
 import { EntityManager } from 'typeorm';
 import { Job } from './entities/job.entity';
 import { CronJob } from 'cron';
+import { JobAgentService } from 'src/ai/job-agent.service';
 
 @Injectable()
 export class JobService implements OnApplicationBootstrap {
   private readonly logger = new Logger(JobService.name);
+
+  @Inject(JobAgentService)
+  private readonly jobAgentService: JobAgentService;
 
   public onJobTrigger?: (job: Job) => Promise<void> | void;
 
@@ -134,15 +138,14 @@ export class JobService implements OnApplicationBootstrap {
 
       const ref = setInterval(async () => {
         this.logger.log(`run job ${job.id}, ${job.instruction}`);
-        if (this.onJobTrigger) {
-          Promise.resolve(this.onJobTrigger(job)).catch((err) => {
-            this.logger.error(`Failed to execute job trigger callback for job ${job.id}: ${err.message}`, err);
-          });
-        }
+
+        await this.entityManager.update(Job, job.id, { lastRun: new Date() });
+
         try {
-          await this.entityManager.update(Job, job.id, { lastRun: new Date() });
+          const result = await this.jobAgentService.runJob(job.instruction);
+          this.logger.log(`[job ${job.id} ${result}]`);
         } catch (error) {
-          this.logger.error(`Failed to update lastRun for job ${job.id}`, error);
+          this.logger.error(`job ${job.id} agent execute error: ${(error as Error).message}`);
         }
       }, job.everyMs);
 
@@ -161,23 +164,15 @@ export class JobService implements OnApplicationBootstrap {
       const delay = Math.max(0, job.at.getTime() - Date.now());
       const ref = setTimeout(async () => {
         this.logger.log(`run job ${job.id}, ${job.instruction}`);
-        if (this.onJobTrigger) {
-          Promise.resolve(this.onJobTrigger(job)).catch((err) => {
-            this.logger.error(`Failed to execute job trigger callback for job ${job.id}: ${err.message}`, err);
-          });
-        }
+        await this.entityManager.update(Job, job.id, {
+          lastRun: new Date(),
+          isEnabled: false, // at 类型只执行一次，执行完自动停用
+        });
         try {
-          await this.entityManager.update(Job, job.id, {
-            lastRun: new Date(),
-            isEnabled: false, // at 类型只执行一次，执行完自动停用
-          });
+          const result = await this.jobAgentService.runJob(job.instruction);
+          this.logger.log(`[job ${job.id} ${result}]`);
         } catch (error) {
-          this.logger.error(`Failed to update lastRun for job ${job.id}`, error);
-        }
-        try {
-          this.schedulerRegistry.deleteTimeout(job.id);
-        } catch (error) {
-          this.logger.warn(`Failed to delete timeout for job ${job.id}`, error);
+          this.logger.error(`job ${job.id} agent execute error: ${(error as Error).message}`);
         }
       }, delay);
 
@@ -219,15 +214,13 @@ export class JobService implements OnApplicationBootstrap {
     }
     return new CronJob(job.cron, async () => {
       this.logger.log(`run job ${job.id}, ${job.instruction}`);
-      if (this.onJobTrigger) {
-        Promise.resolve(this.onJobTrigger(job)).catch((err) => {
-          this.logger.error(`Failed to execute job trigger callback for job ${job.id}: ${err.message}`, err);
-        });
-      }
+      await this.entityManager.update(Job, job.id, { lastRun: new Date() });
+
       try {
-        await this.entityManager.update(Job, job.id, { lastRun: new Date() });
+        const result = await this.jobAgentService.runJob(job.instruction);
+        this.logger.log(`[job ${job.id} ${result}]`);
       } catch (error) {
-        this.logger.error(`Failed to update lastRun for job ${job.id}`, error);
+        this.logger.error(`job ${job.id} agent execute error: ${(error as Error).message}`);
       }
     });
   }
