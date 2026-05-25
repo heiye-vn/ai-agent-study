@@ -35,10 +35,15 @@ const agent = createAgent({
   checkpointer: new MemorySaver(),
 });
 
-const result = await agent.invoke({ messages: [new HumanMessage('SKU-002 还剩多少库存？')] }, {
-  configurable: { thread_id: 'demo-thread' },
-} as any);
+const result = await agent.invoke(
+  // @ts-expect-error 忽略 langchain 内置 ReactAgent 复杂的类型推导报错
+  { messages: [new HumanMessage('SKU-002 还剩多少库存？')] },
+  {
+    configurable: { thread_id: 'demo-thread' },
+  }
+);
 
+// 导出为 Mermaid：可复制到 https://mermaid.live 或 Markdown 的 ```mermaid 代码块
 const drawable = await agent.graph.getGraphAsync();
 const mermaid = drawable.drawMermaid({ withStyles: true });
 console.log(mermaid);
