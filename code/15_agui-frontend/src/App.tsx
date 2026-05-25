@@ -6,7 +6,7 @@ import { MessagePart } from './components/ToolPanels';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 
-const API_BASE = 'http://192.168.31.49:3000';
+const API_BASE = import.meta.env.VITE_SERVER_API_BASE || 'http://localhost:3000';
 
 function App() {
   const chatUrl = `${API_BASE}/ai/chat`;
