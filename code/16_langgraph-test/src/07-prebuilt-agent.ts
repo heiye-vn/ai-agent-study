@@ -4,7 +4,9 @@ import { fileURLToPath } from 'url';
 import { getProductBySku } from './06-inventory-mock.js';
 import z from 'zod';
 import { ChatOpenAI } from '@langchain/openai';
-import { createAgent, HumanMessage, tool } from 'langchain';
+import { createAgent } from 'langchain';
+import { HumanMessage } from '@langchain/core/messages';
+import { tool } from '@langchain/core/tools';
 import { MemorySaver } from '@langchain/langgraph';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -33,10 +35,9 @@ const agent = createAgent({
   checkpointer: new MemorySaver(),
 });
 
-const result = await agent.invoke(
-  { messages: [new HumanMessage('SKU-002 还剩多少库存？')] },
-  { configurable: { thread_id: 'demo-thread' } }
-);
+const result = await agent.invoke({ messages: [new HumanMessage('SKU-002 还剩多少库存？')] }, {
+  configurable: { thread_id: 'demo-thread' },
+} as any);
 
 const drawable = await agent.graph.getGraphAsync();
 const mermaid = drawable.drawMermaid({ withStyles: true });
