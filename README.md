@@ -104,7 +104,8 @@ pnpm install
 | [12_nest-langchain](./code/12_nest-langchain)                | Nest.js 集成 langchain                                       |
 | [13_cron-job-tool](./code/13_cron-job-tool)                  | nest + langchain 实现定时任务tool、邮件发送tool，网络搜索 tool 等 |
 | [14_tts-stt-test](./code/14_tts-stt-test)                    | 语音<->文字识别，转换，实现豆包语音助手功能                  |
-|                                                              |                                                              |
+| [15_agui-frontend](./code/15_agui-frontend)                  | 基于 vercel ai sdk 实现只能助手功能（前端）                  |
+| [15_agui-backend](./code/15_agui-backend)                    | 基于 vercel ai sdk 实现只能助手功能（后端）                  |
 
 
 
