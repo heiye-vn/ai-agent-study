@@ -106,6 +106,7 @@ pnpm install
 | [14_tts-stt-test](./code/14_tts-stt-test)                    | 语音<->文字识别，转换，实现豆包语音助手功能                  |
 | [15_agui-frontend](./code/15_agui-frontend)                  | 基于 vercel ai sdk 实现智能助手功能（前端）                  |
 | [15_agui-backend](./code/15_agui-backend)                    | 基于 vercel ai sdk 实现智能助手功能（后端）                  |
+| [16_langgraph-test](./code/16_langgraph-test)                | 学习 langgraph 相关内容                                      |
 
 
 
