@@ -88,60 +88,25 @@ pnpm install
 
 ## 🚀🚀🚀 code 子目录说明
 
-| 子目录                                                       | 说明                                                         |
-| :----------------------------------------------------------- | :----------------------------------------------------------- |
-| [01_tool-test](code/01_tool-test)                            | LangChain 工具调用测试                                       |
-| [02_mini-cursor](./code/02_mini-cursor)                      | 实现 mini 版cursor，通过文件读写tool来创建一个 todolist 应用 |
-| [03_mcp-test](./code/03_mcp-test)                            | 学习 MCP 相关知识，自定义 MCP Server，使用第三方 MCP Server，了解 MCP 客户端的两种连接方式（http、stdio）的区别 |
-| [04_rag-test](./code/04_rag-test)                            | RAG(Retrieval Augmented Generation)，检索增强生成，loader、splitter 等概念的理解，实现一个简单的 RAG |
-| [05_milvus-test](.code/05_milvus-test)                       | 学习 milvus 向量数据库及相关操作，使用 milvus实现 rag 语义检索 |
-| [06_book-search(milvus+rag)](<./code/06_book-search(milvus+rag)>) | **Demo**：基于 milvus + rag 实现电子书语义检索助手           |
-| [07_memory-test](./code/07_memory-test)                      | Memory 的实现策略：截取、总结、检索                          |
-| [08_output-parser-test](./code/08_output-parser-test)        | 大模型的不同结构化输出方式（output parser、stream 等）       |
-| [09_output-parser-demo](./code/09_output-parser-demo)        | 大模型的几种输出解析器（output parser），实现流式输出版 mini cursor |
-| [10_prompt-template-test](./code/10_prompt-template-test)    | Prompt Template 提示词模板相关 api                           |
-| [11_runnable-test](./code/11_runnable-test)                  | Runnable 相关 API                                            |
-| [12_nest-langchain](./code/12_nest-langchain)                | Nest.js 集成 langchain                                       |
-| [13_cron-job-tool](./code/13_cron-job-tool)                  | nest + langchain 实现定时任务tool、邮件发送tool，网络搜索 tool 等 |
-| [14_tts-stt-test](./code/14_tts-stt-test)                    | 语音<->文字识别，转换，实现豆包语音助手功能                  |
-| [15_agui-frontend](./code/15_agui-frontend)                  | 基于 vercel ai sdk 实现智能助手功能（前端）                  |
-| [15_agui-backend](./code/15_agui-backend)                    | 基于 vercel ai sdk 实现智能助手功能（后端）                  |
-| [16_langgraph-test](./code/16_langgraph-test)                | 学习 langgraph 相关内容                                      |
-| [17_advanced-rag](./code/17_advanced-rag)                    | Agentic RAG: 基于 LangGraph 实现大模型自主决策的 RAG 闭环系统 |
+| 子目录                                                            | 说明                                                                                                            |
+| :---------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------- |
+| [01_tool-test](code/01_tool-test)                                 | LangChain 工具调用测试                                                                                          |
+| [02_mini-cursor](./code/02_mini-cursor)                           | 实现 mini 版cursor，通过文件读写tool来创建一个 todolist 应用                                                    |
+| [03_mcp-test](./code/03_mcp-test)                                 | 学习 MCP 相关知识，自定义 MCP Server，使用第三方 MCP Server，了解 MCP 客户端的两种连接方式（http、stdio）的区别 |
+| [04_rag-test](./code/04_rag-test)                                 | RAG(Retrieval Augmented Generation)，检索增强生成，loader、splitter 等概念的理解，实现一个简单的 RAG            |
+| [05_milvus-test](.code/05_milvus-test)                            | 学习 milvus 向量数据库及相关操作，使用 milvus实现 rag 语义检索                                                  |
+| [06_book-search(milvus+rag)](<./code/06_book-search(milvus+rag)>) | **Demo**：基于 milvus + rag 实现电子书语义检索助手                                                              |
+| [07_memory-test](./code/07_memory-test)                           | Memory 的实现策略：截取、总结、检索                                                                             |
+| [08_output-parser-test](./code/08_output-parser-test)             | 大模型的不同结构化输出方式（output parser、stream 等）                                                          |
+| [09_output-parser-demo](./code/09_output-parser-demo)             | 大模型的几种输出解析器（output parser），实现流式输出版 mini cursor                                             |
+| [10_prompt-template-test](./code/10_prompt-template-test)         | Prompt Template 提示词模板相关 api                                                                              |
+| [11_runnable-test](./code/11_runnable-test)                       | Runnable 相关 API                                                                                               |
+| [12_nest-langchain](./code/12_nest-langchain)                     | Nest.js 集成 langchain                                                                                          |
+| [13_cron-job-tool](./code/13_cron-job-tool)                       | nest + langchain 实现定时任务tool、邮件发送tool，网络搜索 tool 等                                               |
+| [14_tts-stt-test](./code/14_tts-stt-test)                         | 语音<->文字识别，转换，实现豆包语音助手功能                                                                     |
+| [15_agui-frontend](./code/15_agui-frontend)                       | 基于 vercel ai sdk 实现智能助手功能（前端）                                                                     |
+| [15_agui-backend](./code/15_agui-backend)                         | 基于 vercel ai sdk 实现智能助手功能（后端）                                                                     |
+| [16_langgraph-test](./code/16_langgraph-test)                     | 学习 langgraph 相关内容                                                                                         |
+| [17_advanced-rag](./code/17_advanced-rag)                         | Agentic RAG: 基于 LangGraph 实现大模型自主决策的 RAG 闭环系统                                                   |
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+111
