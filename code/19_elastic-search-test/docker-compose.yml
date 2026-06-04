@@ -1,10 +1,10 @@
 version: '3.8'
 
 services:
-  # Elasticsearch 最新稳定版：8.17.0
+  # Elasticsearch 最新稳定版：8.17.0 + IK 中文分词器插件
 
   es:
-    image: elasticsearch:8.17.0
+    build: ./elasticsearch # 从本地 Dockerfile 构建镜像（自带 IK）
 
     container_name: es-dev
 

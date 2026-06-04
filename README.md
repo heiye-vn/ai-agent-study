@@ -86,6 +86,8 @@ cd ..
 pnpm install
 ```
 
+学习源码地址： [Ai Agent 源码](https://github.com/QuarkGluonPlasma/ai-agent-course-code)
+
 ## 🚀🚀🚀 code 子目录说明
 
 | 子目录                                                            | 说明                                                                                                            |
@@ -108,5 +110,3 @@ pnpm install
 | [15_agui-backend](./code/15_agui-backend)                         | 基于 vercel ai sdk 实现智能助手功能（后端）                                                                     |
 | [16_langgraph-test](./code/16_langgraph-test)                     | 学习 langgraph 相关内容                                                                                         |
 | [17_advanced-rag](./code/17_advanced-rag)                         | Agentic RAG: 基于 LangGraph 实现大模型自主决策的 RAG 闭环系统                                                   |
-
-111
