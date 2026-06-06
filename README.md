@@ -37,6 +37,8 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 > ⚠️ 注意：`path.resolve` 中的 `../../../.env` 需根据当前文件相对于根目录的层级调整。
 
+---
+
 ## 🚀 如何创建新子项目
 
 ### 方式一：手动创建（简单项目 / Node.js 脚本）
