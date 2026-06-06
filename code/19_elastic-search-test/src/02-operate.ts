@@ -83,12 +83,14 @@ async function deleteDocument(docId: string) {
 }
 
 async function run() {
-  const docId = await createDocument();
-  console.log(docId, '---docId');
-  await getDocument(docId);
-  //   await updateDocument(docId);
-  //   await searchDocuments();
-  //   await deleteDocument(docId);
+  // const docId = await createDocument();
+  // console.log(docId, '---docId');
+  // await getDocument(docId);
+
+  const docId = 'SGVZnJ4BDLyS8xlnLH9O';
+  // await updateDocument(docId);
+    // await searchDocuments();
+    await deleteDocument(docId);
 }
 
 run().catch((err) => {

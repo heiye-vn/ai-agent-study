@@ -16,6 +16,6 @@
   },
   "type": "module",
   "dependencies": {
-    "@elastic/elasticsearch": "^9.4.2"
+    "@elastic/elasticsearch": "^8.19.1"
   }
 }
