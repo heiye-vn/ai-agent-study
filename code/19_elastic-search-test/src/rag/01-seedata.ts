@@ -1,3 +1,14 @@
+/**
+ * 数据初始化脚本 (01-seedata.ts)
+ * 
+ * 主要职责：
+ * 1. 从项目根目录读取环境变量（`.env`）。
+ * 2. 模拟 10 条个人“生活笔记”数据。
+ * 3. 使用阿里百炼的向量模型（通过 OpenAI 兼容接口）对笔记进行向量化（Embedding）。
+ * 4. 重建 Elasticsearch 索引，配置中文分词器（IK 分词），并将数据批量（bulk）写入。
+ * 5. 重建 Milvus 向量数据库集合（Collection），建立 HNSW 向量索引，并将文本及向量批量（insert）写入。
+ */
+
 import { Client } from '@elastic/elasticsearch';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { DataType, IndexType, MetricType, MilvusClient } from '@zilliz/milvus2-sdk-node';
@@ -5,15 +16,17 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+// 解析当前文件路径，并加载项目根目录下的 .env 环境变量配置文件
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const { parsed: envVars } = dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 
+// 全局配置常量：定义 ES/Milvus 共享的索引/集合名称，以及 Milvus 使用的数据字段
 const INDEX_NAME = 'life_notes';
 const ES_MODE = 'http://localhost:9200';
+const DOC_TEXT = 'doc_text'; // Milvus 存储原始文本拼接的字段名
+const EMBEDDING = 'embedding'; // Milvus 存储向量数据的字段名
 
-const DOC_TEXT = 'doc_text';
-const EMBEDDING = 'embedding';
-
+// 模拟的生活笔记数据，包含日常下厨、宠物、家务维保、数码、法律等多种主题
 const ROWS = [
   {
     id: 'life_01',
@@ -106,26 +119,33 @@ const ROWS = [
   },
 ];
 
+// 初始化阿里云百炼的向量 Embedding 模型 (兼容 OpenAI SDK 的接口调用规范)
 const embeddings = new OpenAIEmbeddings({
-  apiKey: envVars.QWEN_API_KEY,
-  model: envVars.EMBEDDINGS_MODEL_NAME as string,
+  apiKey: process.env.QWEN_API_KEY,
+  model: process.env.EMBEDDINGS_MODEL_NAME as string,
   configuration: {
-    baseURL: envVars.QWEN_BASE_URL,
+    baseURL: process.env.QWEN_BASE_URL,
   },
 });
 
+// 初始化 Milvus 客户端实例
 const milvusClient = new MilvusClient({
-  address: envVars.MILVUS_ADDRESS,
+  address: process.env.MILVUS_ADDRESS ?? 'localhost:19530',
 });
 
-/* 重建 ES 索引并批量（bulk）写入 */
+/**
+ * 重建 Elasticsearch 索引并批量（bulk）写入文档
+ * 
+ * @param indexName 索引名称
+ * @param rows 待导入的结构化生活笔记数据
+ */
 async function seedElasticsearch(indexName: string, rows: any[]) {
   try {
     console.log('\n[Elasticsearch]');
     const client = new Client({ node: ES_MODE });
 
+    // 1. 检查索引是否存在，如果存在则将其物理删除以实现无残留覆盖
     const exists = await client.indices.exists({ index: indexName });
-
     if (exists) {
       console.log('删除已有索引...');
       await client.indices.delete({ index: indexName });
@@ -134,23 +154,25 @@ async function seedElasticsearch(indexName: string, rows: any[]) {
 
     console.log('创建索引与 mapping...');
 
+    // 2. 创建新索引并显式配置 Mapping 映射规则
+    // 特别地：针对文本字段 note_title 和 note_body 使用 IK 中文分词器，支持中文搜索
     await client.indices.create({
       index: indexName,
       mappings: {
         properties: {
           note_title: {
             type: 'text',
-            analyzer: 'ik_max_word',
-            search_analyzer: 'ik_smart',
+            analyzer: 'ik_max_word', // 写入时使用最细粒度切分以提高召回率
+            search_analyzer: 'ik_smart', // 查询时使用粗粒度切分，提高精准度
           },
           note_body: {
             type: 'text',
             analyzer: 'ik_max_word',
             search_analyzer: 'ik_smart',
           },
-          tags: { type: 'keyword' },
-          mood: { type: 'keyword' },
-          priority: { type: 'integer' },
+          tags: { type: 'keyword' }, // 标签使用不分词的精确匹配型
+          mood: { type: 'keyword' }, // 情绪属性使用不分词匹配
+          priority: { type: 'integer' }, // 优先级数值属性
           created_at: { type: 'date' },
           updated_at: { type: 'date' },
         },
@@ -161,33 +183,42 @@ async function seedElasticsearch(indexName: string, rows: any[]) {
     const now = new Date().toISOString();
     console.log(`写入 ${rows.length} 条文档...`);
 
+    // 3. 将数组形式的数据展平成 ES 的 Bulk API 结构并提交批量写入
     await client.bulk({
-      refresh: true,
+      refresh: true, // 写入完成后立即刷新索引以使文档可以被检索
       operations: rows.flatMap((row: any) => {
         const { id, ...rest } = row;
         return [
-          { index: { _index: indexName, _id: id } },
-          { ...rest, created_at: now, updated_at: now },
+          { index: { _index: indexName, _id: id } }, // 声明当前操作在指定的 ID 上建立索引
+          { ...rest, created_at: now, updated_at: now }, // 写入文档的正文数据
         ];
       }),
     });
     console.log('✓ ES 写入完成');
-  } catch (error) {
+  } catch (error: any) {
     console.error('Elasticsearch 出错:', error.message);
     throw error;
   }
 }
 
-/* 若集合已存在则删除；创建集合、索引，加载后再插入数据 */
+/**
+ * 重建 Milvus 向量集合，生成向量嵌入，配置 HNSW 索引并导入数据
+ * 
+ * @param collectionName 集合名称
+ * @param rows 待写入的笔记数据
+ * @param emb 向量生成实例（Embeddings）
+ */
 async function seedMilvus(collectionName: string, rows: any[], emb: any) {
   try {
     console.log('\n[Milvus]');
 
+    // 1. 将标题和笔记正文拼接，组装成用于生成向量嵌入的整段检索文本
     const texts = rows.map((row) => `${row.note_title}\n${row.note_body}`);
     console.log('生成向量嵌入...');
-    const vectors = await emb.embedDocuments(texts);
-    const dim = vectors[0].length;
+    const vectors = await emb.embedDocuments(texts); // 调用百炼大模型批量向量化
+    const dim = vectors[0].length; // 获取向量维度（例如：text-embedding-v4 通常为 1024 维）
 
+    // 2. 检测该集合在 Milvus 中是否存在，若存在则将其 drop 以便覆盖式重建
     const hasCollection = await milvusClient.hasCollection({
       collection_name: collectionName,
     });
@@ -198,10 +229,11 @@ async function seedMilvus(collectionName: string, rows: any[], emb: any) {
     }
 
     console.log('创建集合...');
+    // 3. 构建 Milvus 集合字段结构 Schema，同时匹配 LangChain 内置的 Milvus 存储规范
     await milvusClient.createCollection({
       collection_name: collectionName,
       fields: [
-        { name: 'id', data_type: DataType.VarChar, max_length: 100 },
+        { name: 'id', data_type: DataType.VarChar, max_length: 100 }, // 原始文档 ID
         {
           name: 'note_title',
           data_type: DataType.VarChar,
@@ -220,18 +252,18 @@ async function seedMilvus(collectionName: string, rows: any[], emb: any) {
         },
         { name: 'tags', data_type: DataType.VarChar, max_length: 256 },
         {
-          name: 'langchain_primaryid',
+          name: 'langchain_primaryid', // LangChain 规范要求的主键，配置为 INT64 自增
           data_type: DataType.Int64,
           is_primary_key: true,
           autoID: true,
         },
         {
-          name: DOC_TEXT,
+          name: DOC_TEXT, // 存放用于召回对比的拼装原始文本
           data_type: DataType.VarChar,
           max_length: 10000,
         },
         {
-          name: EMBEDDING,
+          name: EMBEDDING, // 向量字段
           data_type: DataType.FloatVector,
           dim,
         },
@@ -240,6 +272,7 @@ async function seedMilvus(collectionName: string, rows: any[], emb: any) {
     console.log('✓ 集合创建成功');
 
     console.log('创建向量索引...');
+    // 4. 创建向量索引。在此选用经典的 HNSW 索引以支持高并发近邻距离搜索。度量方式为 L2 (欧氏距离)。
     await milvusClient.createIndex({
       collection_name: collectionName,
       field_name: EMBEDDING,
@@ -249,6 +282,7 @@ async function seedMilvus(collectionName: string, rows: any[], emb: any) {
     });
     console.log('✓ 索引创建成功');
 
+    // 5. 加载该集合以供之后进行实时的向量召回
     try {
       await milvusClient.loadCollection({ collection_name: collectionName });
       console.log('✓ 集合已加载');
@@ -256,7 +290,8 @@ async function seedMilvus(collectionName: string, rows: any[], emb: any) {
       console.log('✓ 集合已处于加载状态');
     }
 
-    console.log(`插入 ${rows.length} 条...`);
+    console.log(`插入 ${rows.length} 条...`);
+    // 6. 整理写入字段，元数据属性及拼接文本并将其写入向量集合
     const insertData = rows.map((row, i) => ({
       id: row.id,
       note_title: row.note_title,
@@ -273,26 +308,30 @@ async function seedMilvus(collectionName: string, rows: any[], emb: any) {
       data: insertData,
     });
 
+    // 7. 强制执行同步刷盘落库
     await milvusClient.flushSync({ collection_names: [collectionName] });
 
     const cnt = Number(insertResult.insert_cnt) || rows.length;
     console.log(`✓ Milvus 写入完成（insert_cnt: ${cnt}）`);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Milvus 出错:', error.message);
     throw error;
   }
 }
 
-/* 主入口 */
+/**
+ * 主程序入口
+ */
 async function main() {
   try {
     console.log('\n连接 Milvus...');
-    await milvusClient.connectPromise;
+    await milvusClient.connectPromise; // 建立长连接
     console.log('✓ 已连接');
 
+    // 依次执行 Elasticsearch 及 Milvus 的数据写入初始化
     await seedElasticsearch(INDEX_NAME, ROWS);
     await seedMilvus(INDEX_NAME, ROWS, embeddings);
-  } catch (error) {
+  } catch (error: any) {
     console.error('\n错误:', error.message);
     console.error(error.stack);
     process.exit(1);
@@ -300,3 +339,4 @@ async function main() {
 }
 
 main();
+
