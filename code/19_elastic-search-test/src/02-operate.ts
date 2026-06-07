@@ -37,7 +37,7 @@ async function getDocument(docId: string) {
 }
 
 // 修改文档
-async function updateDocument(docId) {
+async function updateDocument(docId: string) {
   await client.update({
     index: INDEX_NAME,
     id: docId,
