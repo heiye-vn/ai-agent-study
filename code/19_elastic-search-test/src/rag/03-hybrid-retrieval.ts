@@ -1,6 +1,6 @@
 /**
  * 基于 LangGraph 的多路混合检索与重排 RAG 系统 (03-hybrid-retrieval.ts)
- * 
+ *
  * 核心架构流程 (Mermaid 拓扑结构)：
  * START ──> query_augment (LLM 查询扩写)
  *              │
@@ -24,13 +24,13 @@ const INDEX = 'life_notes';
 
 // 1. 定义 LangGraph 拓扑状态图在生命周期中共享的状态对象 Schema
 const HybridRetrievalState = Annotation.Root({
-  query: Annotation<string>(),                // 用户输入的原始提问
-  queryAugmentation: Annotation<any>(),       // LLM 扩写后的 3 条问句
-  esHits: Annotation<any[]>(),                // Elasticsearch 关键词检索到的原始候选文档
-  milvusHits: Annotation<any[]>(),            // Milvus 向量相似度检索到的原始候选文档
-  merged: Annotation<any[]>(),                // 双路合并去重后的候选文档集
-  topDocuments: Annotation<any[]>(),          // 经过 Reranker 重排打分后提取的 Top N 文档
-  answer: Annotation<string>(),               // 大语言模型基于 context 整理生成的最终答复
+  query: Annotation<string>(), // 用户输入的原始提问
+  queryAugmentation: Annotation<any>(), // LLM 扩写后的 3 条问句
+  esHits: Annotation<any[]>(), // Elasticsearch 关键词检索到的原始候选文档
+  milvusHits: Annotation<any[]>(), // Milvus 向量相似度检索到的原始候选文档
+  merged: Annotation<any[]>(), // 双路合并去重后的候选文档集
+  topDocuments: Annotation<any[]>(), // 经过 Reranker 重排打分后提取的 Top N 文档
+  answer: Annotation<string>(), // 大语言模型基于 context 整理生成的最终答复
 });
 
 /**
@@ -157,90 +157,97 @@ const NO_CONTEXT_PROMPT = ChatPromptTemplate.fromMessages([
 
 /**
  * 构造并编译 LangGraph 混合检索工作流状态图
- * 
+ *
  * @param esClient Elasticsearch 客户端
  * @param milvus Milvus LangChain 封装实例
  * @param reranker 阿里百炼 Rerank 服务实例
  * @param chatModel 大语言对话模型
  */
-export function compileHybridRetrievalGraph(esClient: any, milvus: any, reranker: any, chatModel: any) {
+export function compileHybridRetrievalGraph(
+  esClient: any,
+  milvus: any,
+  reranker: any,
+  chatModel: any
+) {
   const ES_K = 15; // ES 总召回数量上限
   const MILVUS_K = 15; // Milvus 总召回数量上限
 
-  return new StateGraph(HybridRetrievalState)
-    // Node 1: 查询扩写节点。调用 LLM 将原始问句扩写出另外 3 条多角度检索句子。
-    .addNode('query_augment', async (state: any) => ({
-      queryAugmentation: await augmentQuery(chatModel, state.query ?? ''),
-    }))
-    // Node 2: ES 召回节点。将 4 条检索句（包含原始问题）分发，并行执行 MultiMatch 查询，合并去重。
-    .addNode('es_recall', async (state: any) => {
-      const qs = retrievalQueryStrings(state.query, state.queryAugmentation);
-      const n = Math.max(1, qs.length);
-      const kEach = Math.max(2, Math.ceil(ES_K / n)); // 动态划分每条扩写检索句分摊的召回数
-      const batches = await Promise.all(
-        qs.map((q) =>
-          esClient.search({
-            index: INDEX,
-            size: kEach,
-            query: {
-              multi_match: {
-                query: q,
-                fields: ['note_title^2', 'note_body', 'title', 'content'], // 标题赋予 2 倍检索权重
-                type: 'best_fields',
-                analyzer: 'ik_smart', // 使用粗粒度的 IK 分词进行搜索匹配
+  return (
+    new StateGraph(HybridRetrievalState)
+      // Node 1: 查询扩写节点。调用 LLM 将原始问句扩写出另外 3 条多角度检索句子。
+      .addNode('query_augment', async (state: any) => ({
+        queryAugmentation: await augmentQuery(chatModel, state.query ?? ''),
+      }))
+      // Node 2: ES 召回节点。将 4 条检索句（包含原始问题）分发，并行执行 MultiMatch 查询，合并去重。
+      .addNode('es_recall', async (state: any) => {
+        const qs = retrievalQueryStrings(state.query, state.queryAugmentation);
+        const n = Math.max(1, qs.length);
+        const kEach = Math.max(2, Math.ceil(ES_K / n)); // 动态划分每条扩写检索句分摊的召回数
+        const batches = await Promise.all(
+          qs.map((q) =>
+            esClient.search({
+              index: INDEX,
+              size: kEach,
+              query: {
+                multi_match: {
+                  query: q,
+                  fields: ['note_title^2', 'note_body', 'title', 'content'], // 标题赋予 2 倍检索权重
+                  type: 'best_fields',
+                  analyzer: 'ik_smart', // 使用粗粒度的 IK 分词进行搜索匹配
+                },
               },
-            },
-          })
-        )
-      );
-      const flat = batches.flatMap((res: any) => (res.hits?.hits ?? []).map(docFromEsHit));
-      return { esHits: dedupeDocsById(flat) };
-    })
-    // Node 3: Milvus 召回节点。将 4 条检索句并行进行向量相似度搜索，合并去重。
-    .addNode('milvus_recall', async (state: any) => {
-      const qs = retrievalQueryStrings(state.query, state.queryAugmentation);
-      const n = Math.max(1, qs.length);
-      const kEach = Math.max(2, Math.ceil(MILVUS_K / n));
-      const batches = await Promise.all(qs.map((q) => milvus.similaritySearch(q, kEach)));
-      const flat = batches.flat();
-      return { milvusHits: dedupeDocsById(flat) };
-    })
-    // Node 4: 合并节点。将 ES (关键字) 和 Milvus (向量语义) 召回的文档集合并并进行唯一性去重。
-    .addNode('merge', async (state: any) => ({
-      merged: merge(state.esHits, state.milvusHits),
-    }))
-    // Node 5: 重排节点。利用 DashScopeRerank 重排模型对合并后的候选文档进行精打分重排，筛选出最具关联度的 Top 3 文档。
-    .addNode('rerank', async (state: any) => {
-      const merged = state.merged ?? [];
-      if (!merged.length) return { topDocuments: [] };
-      const topDocuments = await reranker.compressDocuments(merged, state.query);
-      return { topDocuments };
-    })
-    // Node 6: 回答生成节点。组装上下文并通过 LLM 生成最终答案。
-    .addNode('generate_answer', async (state: any) => {
-      const query = state.query ?? '';
-      const docs = state.topDocuments ?? [];
-      if (!docs.length) {
-        const chain = NO_CONTEXT_PROMPT.pipe(chatModel);
-        const msg: any = await chain.invoke({ query });
+            })
+          )
+        );
+        const flat = batches.flatMap((res: any) => (res.hits?.hits ?? []).map(docFromEsHit));
+        return { esHits: dedupeDocsById(flat) };
+      })
+      // Node 3: Milvus 召回节点。将 4 条检索句并行进行向量相似度搜索，合并去重。
+      .addNode('milvus_recall', async (state: any) => {
+        const qs = retrievalQueryStrings(state.query, state.queryAugmentation);
+        const n = Math.max(1, qs.length);
+        const kEach = Math.max(2, Math.ceil(MILVUS_K / n));
+        const batches = await Promise.all(qs.map((q) => milvus.similaritySearch(q, kEach)));
+        const flat = batches.flat();
+        return { milvusHits: dedupeDocsById(flat) };
+      })
+      // Node 4: 合并节点。将 ES (关键字) 和 Milvus (向量语义) 召回的文档集合并并进行唯一性去重。
+      .addNode('merge', async (state: any) => ({
+        merged: merge(state.esHits, state.milvusHits),
+      }))
+      // Node 5: 重排节点。利用 DashScopeRerank 重排模型对合并后的候选文档进行精打分重排，筛选出最具关联度的 Top 3 文档。
+      .addNode('rerank', async (state: any) => {
+        const merged = state.merged ?? [];
+        if (!merged.length) return { topDocuments: [] };
+        const topDocuments = await reranker.compressDocuments(merged, state.query);
+        return { topDocuments };
+      })
+      // Node 6: 回答生成节点。组装上下文并通过 LLM 生成最终答案。
+      .addNode('generate_answer', async (state: any) => {
+        const query = state.query ?? '';
+        const docs = state.topDocuments ?? [];
+        if (!docs.length) {
+          const chain = NO_CONTEXT_PROMPT.pipe(chatModel);
+          const msg: any = await chain.invoke({ query });
+          return { answer: stringifyMessageContent(msg.content).trim() };
+        }
+        const chain = ANSWER_PROMPT.pipe(chatModel);
+        const msg: any = await chain.invoke({
+          query,
+          context: formatDocsAsContext(docs),
+        });
         return { answer: stringifyMessageContent(msg.content).trim() };
-      }
-      const chain = ANSWER_PROMPT.pipe(chatModel);
-      const msg: any = await chain.invoke({
-        query,
-        context: formatDocsAsContext(docs),
-      });
-      return { answer: stringifyMessageContent(msg.content).trim() };
-    })
-    // 编排工作流的有向无环图（DAG）拓扑结构与并行分发收拢路径
-    .addEdge(START, 'query_augment')
-    .addEdge('query_augment', 'es_recall')      // query_augment 执行完后，分发执行 es_recall
-    .addEdge('query_augment', 'milvus_recall')  // 同时分发执行 milvus_recall
-    .addEdge(['es_recall', 'milvus_recall'], 'merge') // 等待两路召回皆执行完毕后，收拢合并到 merge 节点
-    .addEdge('merge', 'rerank')
-    .addEdge('rerank', 'generate_answer')
-    .addEdge('generate_answer', END)
-    .compile();
+      })
+      // 编排工作流的有向无环图（DAG）拓扑结构与并行分发收拢路径
+      .addEdge(START, 'query_augment')
+      .addEdge('query_augment', 'es_recall') // query_augment 执行完后，分发执行 es_recall
+      .addEdge('query_augment', 'milvus_recall') // 同时分发执行 milvus_recall
+      .addEdge(['es_recall', 'milvus_recall'], 'merge') // 等待两路召回皆执行完毕后，收拢合并到 merge 节点
+      .addEdge('merge', 'rerank')
+      .addEdge('rerank', 'generate_answer')
+      .addEdge('generate_answer', END)
+      .compile()
+  );
 }
 
 // 全局客户端与向量组件初始化
@@ -255,7 +262,10 @@ const embeddings = new OpenAIEmbeddings({
 
 // 测试样本问题：用以演示混合检索对错字、俗语、多维度语义关联的检索能力
 const SAMPLE_QUERIES = [
-  '家里无线老是断断续续的咋整啊',
+  // '家里无线老是断断续续的咋整啊',
+  // '明火炖太久汤汁又黏又涩，起锅前要怎么处理才不腻',
+  // 'P0-20250409-K9 滤芯订单',
+  'iPhone 手机 和 Android 手机的区别'
 ];
 
 /**
@@ -271,22 +281,24 @@ async function main() {
     textField: 'doc_text',
     vectorField: 'embedding',
   });
-  
+
   // 2. 初始化重排模型服务类
   const reranker = new DashScopeRerank({
     apiKey: process.env.QWEN_API_KEY,
     model: process.env.QWEN_RERANK_MODEL_NAME ?? 'gte-rerank',
     topN: 3,
-    baseUrl: process.env.QWEN_RERANK_URL ?? 'https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank',
+    baseUrl:
+      process.env.QWEN_RERANK_URL ??
+      'https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank',
   });
 
   // 3. 初始化 LLM
   const chatModel = new ChatOpenAI({
-    model: process.env.LLM_MODEL_NAME ?? 'qwen-turbo',
-    apiKey: process.env.OPENAI_API_KEY,
+    model: process.env.QWEN_MODEL_NAME,
+    apiKey: process.env.QWEN_API_KEY,
     temperature: 0.2,
     configuration: {
-      baseURL: process.env.OPENAI_BASE_URL,
+      baseURL: process.env.QWEN_BASE_URL,
     },
   });
 
@@ -320,4 +332,3 @@ async function main() {
 main().catch((err) => {
   console.error(err);
 });
-
