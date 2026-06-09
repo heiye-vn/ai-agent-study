@@ -76,13 +76,19 @@ PDF 经常会有页眉页脚、页码、断行、重复水印、目录、脚注�
 
 面试时可以压缩成这样一段：
 
-  > 我不会把 PDF 简单当成纯文本处理。PDF 在 RAG 里最大的难点是版式信息和语义结构不一致，所以我会先判断它是文本型 PDF 还是扫描
-  > 件，分别用文本解析或 OCR。解析时会尽量保留页码、标题、段落、表格等结构信息，并清理页眉页脚、断行、水印等噪声。之后不是直接
-  > 按固定 token 切，而是优先按章节、标题、段落做语义切分，过长内容再做 token chunk，并给每个 chunk 加上 source、page、section
-  > 等 metadata。表格、图片、公式会单独处理，比如表格转 markdown，图片做 OCR 或 caption。索引时除了 embedding，也会结合 BM25、
-  > metadata filter 和 reranker，提高召回质量。最后生成答案时带引用页码，保证可追溯。
+  > 我不会把 PDF 简单当成纯文本处理。PDF 在 RAG 里最大的难点是版式信息和语义结构不一致，所以我会先判断它是文本型 PDF 还是扫描件，分别用文本解析或 OCR。解析时会尽量保留页码、标题、段落、表格等结构信息，并清理页眉页脚、断行、水印等噪声。之后不是直接按固定 token 切，而是优先按章节、标题、段落做语义切分，过长内容再做 token chunk，并给每个 chunk 加上 source、page、section
+  > 等 metadata。表格、图片、公式会单独处理，比如表格转 markdown，图片做 OCR 或 caption。索引时除了 embedding，也会结合 BM25、metadata filter 和 reranker，提高召回质量。最后生成答案时带引用页码，保证可追溯。
 
-  这就比“用 LangChain loader 切分 embedding 存库”更像一个真实工程里的 RAG 答案。
+> “在实际的生产项目中，我们不会直接用简单的内置 PDF Loader。因为 PDF 格式复杂，双栏排版、表格和图片的丢失都会严重破坏语义。
+>
+> 我们的做法是搭建一个**结构化文档解析 Pipeline**：
+>
+> 1. 首先，我们会采用**版面分析（Layout Analysis）**工具，比如 **Marker** 或 **MinerU**，将 PDF 还原为结构清晰的 **Markdown 格式**，保留阅读顺序并剔除页眉页脚噪音。
+> 2. 针对表格，我们会单独提取并转化为 **Markdown Table** 以保留结构化信息；针对图表，我们会利用**多模态大模型**生成文本描述（Caption），与原文建立关联。
+> 3. 在切分阶段，我们废弃了传统的固定长度切分，而是使用 **Layout-Aware Chunking（基于版面层级的切分）** 和 **Parent-Child Chunking（父子分块）**。计算 Embedding 时用 150 token 左右的细粒度 Child Chunk，召回时将对应的 Parent Chunk 送给大模型，保证上下文完整。
+> 4. 最后，在索引端，我们会为每个 Chunk 打上页码、章节等 **Metadata**。在检索时使用 **Hybrid Search（向量 + BM25 混合检索）** 并配合 **Reranker（如 BGE-Reranker）** 进行二次精排，以实现最高的检索召回率和准确率。”
+
+ 这就比“用 LangChain loader 切分 embedding 存库”更像一个真实工程里的 RAG 答案。
 
   核心区别是：
 
