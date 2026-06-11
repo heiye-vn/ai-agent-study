@@ -1,4 +1,10 @@
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { Annotation, END, START, StateGraph } from '@langchain/langgraph';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 interface IState {
   query: string;
