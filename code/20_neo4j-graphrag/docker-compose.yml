@@ -1,6 +1,7 @@
 services:
   neo4j:
     image: neo4j:latest
+    platform: linux/amd64
 
     container_name: neo4j-container
 
