@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { Neo4jGraph } from '@langchain/community/graphs/neo4j_graph';
 import { ChatOpenAI } from '@langchain/openai';
-import { StateGraph, END, START } from '@langchain/langgraph';
+import { StateGraph, END, START, Annotation } from '@langchain/langgraph';
 import { HumanMessage } from '@langchain/core/messages';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -26,25 +26,38 @@ const llm = new ChatOpenAI({
 });
 
 // 定义状态
-const state = {
-  messages: {
-    value: (left: any, right: any) => left.concat(Array.isArray(right) ? right : [right]),
+const graphState = Annotation.Root({
+  messages: Annotation<HumanMessage[]>({
+    reducer: (left: HumanMessage[], right: HumanMessage | HumanMessage[]) =>
+      left.concat(Array.isArray(right) ? right : [right]),
     default: () => [],
-  },
-  query: null,
-  cypher: null,
-  context: null,
-  answer: null,
-};
+  }),
+  query: Annotation<string | null>({
+    reducer: (_left: string | null, right: string | null) => right ?? _left,
+    default: () => null,
+  }),
+  cypher: Annotation<string | null>({
+    reducer: (_left: string | null, right: string | null) => right ?? _left,
+    default: () => null,
+  }),
+  context: Annotation<string | null>({
+    reducer: (_left: string | null, right: string | null) => right ?? _left,
+    default: () => null,
+  }),
+  answer: Annotation<string | null>({
+    reducer: (_left: string | null, right: string | null) => right ?? _left,
+    default: () => null,
+  }),
+});
 
 // 步骤1：解析问题
-async function parseQuestion(state: any) {
+async function parseQuestion(state: typeof graphState.State) {
   const lastMessage = state.messages[state.messages.length - 1];
   return { query: lastMessage.content };
 }
 
 // 步骤2：生成 Cypher
-async function generateCypher(state: any) {
+async function generateCypher(state: typeof graphState.State) {
   const prompt = `
     你是一个专业的 Neo4j Cypher 生成器。
     严格按照下面的结构生成正确语句，只返回纯 Cypher 代码，不要任何解释、不要标点、不要 markdown。
@@ -74,9 +87,9 @@ async function generateCypher(state: any) {
 }
 
 // 步骤3： 执行图查询
-async function executeGraphQuery(state: any) {
+async function executeGraphQuery(state: typeof graphState.State) {
   try {
-    const res = await neo4jGraph.query(state.cypher);
+    const res = await neo4jGraph.query(state.cypher!);
     return { context: JSON.stringify(res) };
   } catch (error) {
     return { context: '未查询到相关知识' };
@@ -84,7 +97,7 @@ async function executeGraphQuery(state: any) {
 }
 
 // 步骤4：生成答案
-async function generateAnswer(state: any) {
+async function generateAnswer(state: typeof graphState.State) {
   const prompt = `
     你是奶茶专家，根据下方「检索结果」回答用户问题；检索结果为空或不足时简要说明无法从图谱得到答案，不要编造。
     回答要求：
@@ -98,7 +111,7 @@ async function generateAnswer(state: any) {
 }
 
 // 构建 LangGrapg 工作流
-const workflow = new StateGraph({ channels: state })
+const workflow = new StateGraph(graphState)
   .addNode('parse', parseQuestion)
   .addNode('generate_cypher', generateCypher)
   .addNode('execute_graph_query', executeGraphQuery)
