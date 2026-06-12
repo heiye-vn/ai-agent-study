@@ -33,7 +33,7 @@ async function main() {
     data: DATASET_NAME,
     evaluators: ragEvaluators,
     client,
-    experimentPrefix: `rag-openvals-${envVars.QINIU_MODEL_NAME ?? 'qwen'}`,
+    experimentPrefix: `rag-openvals-${envVars.QWEN_MODEL_NAME ?? 'qwen'}`,
     maxConcurrency: 2, // 限制最大并发数，防止超出大模型 API 限制或限流
   });
 
