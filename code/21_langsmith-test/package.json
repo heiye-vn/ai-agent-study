@@ -23,6 +23,7 @@
     "@langchain/textsplitters": "^1.0.1",
     "@zilliz/milvus2-sdk-node": "^2.6.13",
     "dotenv": "^17.4.2",
-    "langsmith": "^0.7.6"
+    "langsmith": "^0.7.6",
+    "openevals": "^0.2.0"
   }
 }

@@ -7,6 +7,7 @@ import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { Annotation, END, START, StateGraph } from '@langchain/langgraph';
+import { Document } from '@langchain/core/documents';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const envVars = dotenv.config({ path: path.resolve(__dirname, '../../../.env') }).parsed || {};
@@ -26,12 +27,19 @@ const llm = new ChatOpenAI({
   configuration: { baseURL: envVars.QWEN_BASE_URL },
 });
 
-const vectorStore = await Milvus.fromExistingCollection(embeddings, {
-  collectionName: COLLECTION_NAME ?? 'rag_docs',
-  url: envVars.MILVUS_ADDRESS ?? 'http://localhost:19530',
-});
+let vectorStore: Milvus | null = null;
+let retriever: any = null;
 
-const retriever = vectorStore.asRetriever({ k: 4 });
+async function getRetriever() {
+  if (!retriever) {
+    vectorStore = await Milvus.fromExistingCollection(embeddings, {
+      collectionName: COLLECTION_NAME ?? 'rag_docs',
+      url: envVars.MILVUS_ADDRESS ?? 'http://localhost:19530',
+    });
+    retriever = vectorStore.asRetriever({ k: 4 });
+  }
+  return retriever;
+}
 
 const prompt = ChatPromptTemplate.fromMessages([
   [
@@ -44,27 +52,19 @@ const prompt = ChatPromptTemplate.fromMessages([
 const chain = RunnableSequence.from([prompt, llm, new StringOutputParser()]);
 
 const GraphState = Annotation.Root({
-  question: Annotation({
-    reducer: (prev: string, add: string) => add,
-    default: () => '',
-  }),
-  context: Annotation({
-    reducer: (prev: Document[], add: Document[]) => add,
-    default: () => [],
-  }),
-  answer: Annotation({
-    reducer: (prev: string, add: string) => add,
-    default: () => '',
-  }),
+  question: Annotation<string>,
+  context: Annotation<Document[]>,
+  answer: Annotation<string>,
 });
 
 async function retrieve(state: typeof GraphState.State) {
-  const docs = await retriever.invoke(state.question);
+  const activeRetriever = await getRetriever();
+  const docs = await activeRetriever.invoke(state.question);
   return { context: docs };
 }
 
 async function generate(state: typeof GraphState.State) {
-  const contextText = state.context.map((d) => d.pageContent.join('\n\n'));
+  const contextText = state.context.map((d) => d.pageContent).join('\n\n');
   const answer = await chain.invoke({
     context: contextText,
     question: state.question,
@@ -87,4 +87,15 @@ export async function ask(question: string) {
     answer: result.answer,
     context: result.context ?? [],
   };
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  console.log('--- 开始测试 RAG Agent ---');
+  try {
+    const response = await ask('什么是 Milvus？');
+    console.log('Q: 什么是 Milvus？');
+    console.log('A:', response.answer);
+  } catch (error) {
+    console.error('运行测试时发生错误：', error);
+  }
 }
