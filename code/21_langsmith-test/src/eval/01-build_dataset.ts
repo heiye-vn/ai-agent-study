@@ -6,8 +6,10 @@ import { Client } from 'langsmith';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const envVars = dotenv.config({ path: path.resolve(__dirname, '../../../../.env') }).parsed || {};
 
+// LangSmith 上的评估数据集名称
 const DATASET_NAME = 'rag-eval-v1';
 
+// 评测样本数据（标准 Ground Truth），包含输入问题(question)和预期标准回答(answer)
 const EXAMPLES = [
   {
     inputs: { question: '无理由退货要在几天内申请？' },
@@ -61,21 +63,28 @@ const EXAMPLES = [
   },
 ];
 
+/**
+ * 主程序：在 LangSmith 中创建或获取评估数据集，并向其中导入示例测试数据
+ */
 async function main() {
+  // 初始化 LangSmith 客户端，读取环境变量中的 API Key
   const client = new Client({ apiKey: envVars.LANGCHAIN_API_KEY });
 
   let dataset;
 
   try {
+    // 尝试读取已存在的同名数据集
     dataset = await client.readDataset({ datasetName: DATASET_NAME });
     console.log(`数据集已存在：${DATASET_NAME}`);
   } catch (error) {
+    // 如果不存在，则新建该数据集
     dataset = await client.createDataset(DATASET_NAME, {
       description: 'RAG Agent 回归评估集',
     });
     console.log(`已创建数据集：${DATASET_NAME}`);
   }
 
+  // 将本地评测示例列表映射并批量上传到 LangSmith 数据集中
   const created = await client.createExamples(
     EXAMPLES.map((e) => ({
       dataset_id: dataset.id,
