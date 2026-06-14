@@ -82,16 +82,16 @@ const makeSimilarProblem = tool(
     const n = (seed % 7) + 3;
     const problems = {
       divide_then_add: {
-        stem: `小红有 ${n * 6} 张贴纸，平均分给 ${n} 个小组，又买了 2 包每包 ${n + 2} 张的。每个小组现在一共有多少张？`,
-        hint: '先平均分，再加上后来买的，注意单位是「每个小组」',
+        stem: `小红有 ${n * 6} 张贴纸，平均分给 ${n} 个小组；又买了 2 包贴纸，每包 ${n} 张，也平均分给这 ${n} 个小组。每个小组现在一共有多少张？`,
+        hint: '先算原来每组多少，再算新买的每组多少，最后相加',
       },
       share_candy: {
-        stem: `小刚有 ${n * 4} 块糖，要分给 ${n} 位同学，妈妈又买了 3 袋每袋 ${n} 块的。每位同学现在能分到多少块？`,
-        hint: '与分糖题类似：先平分，再加上新增',
+        stem: `小刚有 ${n * 4} 块糖，要平均分给 ${n} 位同学；妈妈又买了 3 袋糖，每袋 ${n} 块，也平均分给这 ${n} 位同学。每位同学现在能分到多少块？`,
+        hint: '两批糖都要平均分，分别算每人多少再相加',
       },
       group_buy: {
-        stem: `班里有 ${n} 个小组，每组先分到 ${n * 5} 支铅笔，老师又补了 2 盒每盒 ${n + 1} 支。每个小组现在有多少支？`,
-        hint: '先算每组原有，再加上后来补的',
+        stem: `班里有 ${n} 个小组，先把 ${n * 5} 支铅笔平均分给各组；老师又补了 2 盒铅笔，每盒 ${n} 支，也平均分给这 ${n} 个小组。每个小组现在有多少支？`,
+        hint: '先算第一批每组多少，再算补充的每组多少',
       },
     };
     const picked = problems[template] ?? problems.share_candy;
@@ -153,7 +153,7 @@ const agent = createAgent({
     createSubAgentMiddleware({
       defaultModel: model,
       subagents,
-      generalPurposeAgent: false,
+      generalPurposeAgent: false, // 不适用通用子 Agent
     }) as any,
   ],
 });
@@ -161,7 +161,7 @@ const agent = createAgent({
 const prompt = [
   '孩子遇到这道题：',
   '「小明有 24 块糖，平均分给 6 个同学；',
-  '妈妈又买了 3 包糖，每包 5 块。每个同学现在一共有多少块？」',
+  '妈妈又买了 3 包糖，每包 4 块，也平均分给这 6 个同学。每个同学现在一共有多少块？」',
   '请先 math-solver 解题，再 kid-tutor 教家长怎么讲，',
   '最后 practice-maker 出 2 道类似练习题，并汇总给我。',
 ].join('');

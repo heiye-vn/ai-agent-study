@@ -36,6 +36,7 @@ const agent = createAgent({
     '工作区根路径为 /。用 ls、read_file、write_file、edit_file 操作文件，路径以 / 开头。中文回答。',
   middleware: [
     createFilesystemMiddleware({
+      // FilesystemBackend：操作本地文件系统
       backend: new FilesystemBackend({ rootDir: workspaceDir, virtualMode: true }),
       permissions,
     }) as any,
@@ -45,6 +46,7 @@ const agent = createAgent({
 console.log('工作区:', workspaceDir);
 console.log('权限:', JSON.stringify(permissions, null, 2));
 
+// 正常执行
 async function run(label: string, prompt: string) {
   console.log(`\n=== ${label} ===\n`, prompt, '\n');
   const { messages } = await agent.invoke(
@@ -57,6 +59,7 @@ async function run(label: string, prompt: string) {
   console.log('回复:', messages.at(-1)?.content);
 }
 
+// 预期被拒绝的操作
 async function expectDenied(label: string, prompt: string) {
   console.log(`\n=== ${label}（预期拒绝）===\n`, prompt, '\n');
   try {

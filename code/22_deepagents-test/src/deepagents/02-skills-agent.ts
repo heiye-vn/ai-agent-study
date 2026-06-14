@@ -27,12 +27,17 @@ if (!existsSync('.agents/skills/excalidraw-diagram-generator/SKILL.md')) {
 
 mkdirSync('src/deepagents/output', { recursive: true });
 
+/**
+ * 创建本地 shell 后端，可以访问本地文件系统
+ * LocalShellBackend 继承自 FilesystemBackend，额外支持 Shell 命令执行
+ */
 const backend = await LocalShellBackend.create({
-  rootDir: '.',
-  virtualMode: true,
-  inheritEnv: true,
+  rootDir: '.', // 项目根目录作为文件系统根
+  virtualMode: true, // Agent 看到的 / 映射到项目根
+  inheritEnv: true, // 继承父进程环境变量（Agent 可执行 shell 命令）
 });
 
+// 创建智能体
 const agent = createAgent({
   model,
   tools: [],
@@ -43,7 +48,9 @@ const agent = createAgent({
     '禁止将 JSON 对象直接作为 content 值。',
   ].join('\n'),
   middleware: [
+    // 技能加载中间件
     createSkillsMiddleware({ backend, sources: [skills] }) as any,
+    // 文件操作中间件
     createFilesystemMiddleware({ backend }) as any,
   ],
 });
@@ -61,6 +68,7 @@ const prompt = [
 
 console.log('用户:', prompt);
 
+// 处理分块
 function chunkText(chunk: any) {
   if (!chunk?.content) return '';
   if (typeof chunk.content === 'string') return chunk.content;
@@ -78,6 +86,7 @@ const stream = await agent.streamEvents(
 let skillsMetadata;
 console.log('\n--- 流式输出 ---\n');
 
+// 不同类型的流式处理
 try {
   for await (const event of stream) {
     if (event.event === 'on_chat_model_stream') {
