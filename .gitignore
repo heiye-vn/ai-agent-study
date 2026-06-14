@@ -32,3 +32,6 @@ npm-debug.log*
 # Docker volumes
 volumes/
 **/volumes/
+
+# Agent runtime output
+**/workspace/
