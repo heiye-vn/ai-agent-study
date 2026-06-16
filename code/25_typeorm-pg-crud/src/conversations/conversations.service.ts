@@ -20,11 +20,11 @@ export interface SemanticSearchResult {
 @Injectable()
 export class ConversationsService {
   private embeddings: OpenAIEmbeddings | null = null;
-  private readonly configService: ConfigService;
 
   constructor(
     @InjectEntityManager()
-    private readonly em: EntityManager
+    private readonly em: EntityManager,
+    private readonly configService: ConfigService
   ) {}
 
   /** 用户 -> 会话（一对多） */

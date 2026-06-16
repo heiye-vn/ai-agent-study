@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   DefaultValuePipe,
@@ -31,9 +32,12 @@ export class ConversationsController {
   @Post(':id/search')
   search(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: SemanticSearchDto,
+    @Body() dto?: SemanticSearchDto,
     @Query('limit', new DefaultValuePipe(5), ParseIntPipe) queryLimit?: number
   ) {
+    if (!dto || !dto.query) {
+      throw new BadRequestException('请求体必须包含 "query" 字段');
+    }
     const limit = dto.limit ?? queryLimit ?? 5;
     return this.conversationsService.searchSimilarMessages(id, dto.query, limit);
   }
