@@ -1396,6 +1396,15 @@ importers:
         specifier: ^8.20.0
         version: 8.59.2(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3)
 
+  code/26_redis-test:
+    devDependencies:
+      tsx:
+        specifier: ^4.21.0
+        version: 4.21.0
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
 packages:
 
   '@ai-sdk/gateway@3.0.120':
