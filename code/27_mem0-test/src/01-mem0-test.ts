@@ -26,14 +26,14 @@ async function main() {
   //   const added = await client.add(conversation, { userId: USER_ID });
   //   log('添加记忆', added);
 
-  const searchResult = await client.search('用户的饮食限制是什么？中文回答', {
-    filters: { userId: USER_ID },
-    topK: 5,
-  });
-  log('搜索记忆', searchResult);
+  //   const searchResult = await client.search('用户的饮食限制是什么？中文回答', {
+  //     filters: { user_id: USER_ID },
+  //     topK: 5,
+  //   });
+  //   log('搜索记忆', searchResult);
 
   //   const allMemories = await client.getAll({
-  //     filters: { userId: USER_ID },
+  //     filters: { user_id: USER_ID },
   //     pageSize: 10,
   //   });
   //   log('获取所有记忆', allMemories);
@@ -52,12 +52,12 @@ async function main() {
   //     log('记忆变更历史', history);
   //   }
 
-  //   if (process.argv.includes('--cleanup')) {
-  //     const deleted = await client.deleteAll({ userId: USER_ID });
-  //     log('清理测试数据', deleted);
-  //   } else {
-  //     console.log('\n请运行：tsx src/01-mem0-test.ts --cleanup 以清理测试数据。');
-  //   }
+  if (process.argv.includes('--cleanup')) {
+    const deleted = await client.deleteAll({ userId: USER_ID });
+    log('清理测试数据', deleted);
+  } else {
+    console.log('\n请运行：tsx src/01-mem0-test.ts --cleanup 以清理测试数据。');
+  }
 }
 
 main().catch((error) => {

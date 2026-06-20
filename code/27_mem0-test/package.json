@@ -16,7 +16,12 @@
   },
   "type": "module",
   "dependencies": {
+    "@langchain/core": "^1.2.0",
+    "@langchain/openai": "^1.5.1",
     "dotenv": "^17.4.2",
-    "mem0ai": "^3.0.9"
+    "ioredis": "^5.11.1",
+    "langchain": "^1.5.0",
+    "mem0ai": "^3.0.9",
+    "zod": "^4.3.6"
   }
 }
