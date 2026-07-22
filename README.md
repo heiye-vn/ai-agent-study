@@ -112,14 +112,14 @@ pnpm install
 | [15_agui-backend](./code/15_agui-backend)                    | 基于 vercel ai sdk 实现智能助手功能（后端）                  |
 | [16_langgraph-test](./code/16_langgraph-test)                | 学习 langgraph 相关内容                                      |
 | [17_advanced-rag](./code/17_advanced-rag)                    | Agentic RAG: 基于 LangGraph 实现大模型自主决策的 RAG 闭环系统 |
-| [18_nest-dockerfile-test](./code/18_nest-dockerfile-test)    |                                                              |
-| [19_elastic-search-test](./code/19_elastic-search-test)      |                                                              |
-| [20_neo4j-graphrag](./code/20_neo4j-graphrag)                |                                                              |
-| [21_langsmith-test](./code/21_langsmith-test)                |                                                              |
-| [22_deepagents-test](./code/22_deepagents-test)              |                                                              |
-| [23_deep-research-assistant](./code/23_deep-research-assistant) |                                                              |
-| [24_pgsql-test](./code/24_pgsql-test)                        |                                                              |
-| [25_typeorm-pg-crud](./code/25_typeorm-pg-crud/)             |                                                              |
-| [26_redis-test](./code/26_redis-test)                        |                                                              |
-| [27_mem0-test](./code/27_mem0-test)                          |                                                              |
+| [18_nest-dockerfile-test](./code/18_nest-dockerfile-test)    | docker 容器、dockerfile、docker compose 编排部署相关         |
+| [19_elastic-search-test](./code/19_elastic-search-test)      | ES 全文检索（倒排索引、IK 分词器、BM25 算法）、混合检索 RAG（多路召回+重排） |
+| [20_neo4j-graphrag](./code/20_neo4j-graphrag)                | 知识图谱（Noe4j）和 Graph RAG                                |
+| [21_langsmith-test](./code/21_langsmith-test)                | LangSmith —— 全链路调试、评估与观测平台                      |
+| [22_deepagents-test](./code/22_deepagents-test)              | DeepAgents —— Agent 智能体框架                               |
+| [23_deep-research-assistant](./code/23_deep-research-assistant) | DeepAgents 实现多 Agent 架构的深度调研助手                   |
+| [24_pgsql-test](./code/24_pgsql-test)                        | PostgreSQL 数据库入门                                        |
+| [25_typeorm-pg-crud](./code/25_typeorm-pg-crud/)             | PostgreSQL  + tyeorm 的 CRUD 练习                            |
+| [26_redis-test](./code/26_redis-test)                        | Redis 实现短期记忆存储                                       |
+| [27_mem0-test](./code/27_mem0-test)                          | Mem0 实现分层记忆+三路召回的长期记忆方案                     |
 | [28_oss-test](./code/28_oss-test)                            | Agent 对象存储方案：阿里云 OSS                               |
