@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import Minio from 'minio';
+import * as Minio from 'minio';
 import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
