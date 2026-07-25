@@ -1,0 +1,769 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>OSS 多模态文件直传中心 - Multi-modal Agent OSS Uploader</title>
+    <meta
+      name="description"
+      content="基于阿里云 OSS PostObject 直传的高性能多模态文件上传与管理中心"
+    />
+    <!-- 引入 Google 字体 -->
+    <link
+      rel="preconnect"
+      href="https://fonts.googleapis.com"
+    />
+    <link
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- 引入 Axios -->
+    <script src="https://unpkg.com/axios@1.6.5/dist/axios.min.js"></script>
+    <!-- 引入 Lucide 图标库 -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+      :root {
+        --bg-main: #0b0f19;
+        --card-bg: rgba(18, 24, 38, 0.7);
+        --card-border: rgba(255, 255, 255, 0.08);
+        --card-border-hover: rgba(99, 102, 241, 0.5);
+        --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+        --accent-color: #6366f1;
+        --accent-hover: #4f46e5;
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --text-muted: #64748b;
+        --success-color: #10b981;
+        --radius-lg: 16px;
+        --radius-md: 12px;
+        --radius-sm: 8px;
+        --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.25);
+      }
+
+      html,
+      body {
+        height: 100vh;
+        overflow: hidden;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE and Edge */
+      }
+
+      html::-webkit-scrollbar,
+      body::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family:
+          'Plus Jakarta Sans',
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+        background-color: var(--bg-main);
+        color: var(--text-primary);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        position: relative;
+      }
+
+      /* 极光背景特效 */
+      body::before {
+        content: '';
+        position: absolute;
+        top: -10%;
+        left: 20%;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(
+          circle,
+          rgba(99, 102, 241, 0.15) 0%,
+          rgba(139, 92, 246, 0.05) 50%,
+          transparent 70%
+        );
+        filter: blur(80px);
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      body::after {
+        content: '';
+        position: absolute;
+        bottom: -10%;
+        right: 15%;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(
+          circle,
+          rgba(217, 70, 239, 0.12) 0%,
+          rgba(99, 102, 241, 0.03) 50%,
+          transparent 70%
+        );
+        filter: blur(80px);
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      .app-container {
+        width: 100%;
+        max-width: 840px;
+        height: 100%;
+        max-height: calc(100vh - 3rem);
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        overflow-y: auto;
+        scrollbar-width: none;
+      }
+
+      .app-container::-webkit-scrollbar {
+        display: none;
+      }
+
+      /* 页头 */
+      header {
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.35rem 0.85rem;
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.25);
+        border-radius: 9999px;
+        color: #818cf8;
+        font-size: 0.85rem;
+        font-weight: 500;
+      }
+
+      header h1 {
+        font-size: 2.25rem;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      header p {
+        color: var(--text-secondary);
+        font-size: 0.975rem;
+        max-width: 500px;
+      }
+
+      /* 拖拽上传卡片 */
+      .drop-zone {
+        background: var(--card-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 2px dashed var(--card-border);
+        border-radius: var(--radius-lg);
+        padding: 3rem 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.25rem;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .drop-zone:hover,
+      .drop-zone.dragover {
+        border-color: var(--accent-color);
+        background: rgba(24, 32, 52, 0.8);
+        box-shadow: var(--shadow-glow);
+        transform: translateY(-2px);
+      }
+
+      .drop-zone.dragover {
+        scale: 1.01;
+      }
+
+      .icon-container {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #818cf8;
+        transition: transform 0.3s ease;
+      }
+
+      .drop-zone:hover .icon-container {
+        transform: scale(1.1) rotate(5deg);
+        background: var(--accent-gradient);
+        color: #ffffff;
+      }
+
+      .drop-zone-text h3 {
+        font-size: 1.15rem;
+        font-weight: 600;
+        margin-bottom: 0.35rem;
+      }
+
+      .drop-zone-text p {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+      }
+
+      .btn-select {
+        background: var(--accent-gradient);
+        color: white;
+        border: none;
+        padding: 0.65rem 1.4rem;
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .btn-select:hover {
+        opacity: 0.95;
+        transform: scale(1.03);
+      }
+
+      #fileInput {
+        display: none;
+      }
+
+      /* 进度条与状态容器 */
+      .progress-card {
+        background: var(--card-bg);
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius-md);
+        padding: 1.25rem 1.5rem;
+        display: none;
+        flex-direction: column;
+        gap: 0.75rem;
+        animation: fadeIn 0.3s ease;
+      }
+
+      .progress-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.875rem;
+      }
+
+      .file-info-short {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 500;
+        color: var(--text-primary);
+      }
+
+      .progress-status {
+        color: #818cf8;
+        font-weight: 600;
+      }
+
+      .progress-bar-bg {
+        width: 100%;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 9999px;
+        overflow: hidden;
+      }
+
+      .progress-bar-fill {
+        height: 100%;
+        width: 0%;
+        background: var(--accent-gradient);
+        border-radius: 9999px;
+        transition: width 0.2s ease;
+      }
+
+      /* 上传列表卡片区 */
+      .gallery-section {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .file-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1.25rem;
+      }
+
+      .file-card {
+        background: var(--card-bg);
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.25s ease;
+        animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .file-card:hover {
+        border-color: var(--card-border-hover);
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+      }
+
+      .preview-wrapper {
+        width: 100%;
+        height: 160px;
+        background: #070a12;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .preview-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+      }
+
+      .file-card:hover .preview-img {
+        transform: scale(1.05);
+      }
+
+      .file-meta {
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .file-name {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .file-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 0.25rem;
+      }
+
+      .status-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.75rem;
+        color: var(--success-color);
+        background: rgba(16, 185, 129, 0.1);
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-weight: 500;
+      }
+
+      .btn-copy {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--text-secondary);
+        border-radius: var(--radius-sm);
+        padding: 0.35rem 0.6rem;
+        font-size: 0.8rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        transition: all 0.2s ease;
+      }
+
+      .btn-copy:hover {
+        background: rgba(99, 102, 241, 0.2);
+        border-color: rgba(99, 102, 241, 0.4);
+        color: #ffffff;
+      }
+
+      /* 消息 Toast */
+      .toast {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        background: rgba(18, 24, 38, 0.9);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--accent-color);
+        color: white;
+        padding: 0.85rem 1.25rem;
+        border-radius: var(--radius-md);
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        transform: translateY(100px);
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .toast.show {
+        transform: translateY(0);
+        opacity: 1;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 640px) {
+        header h1 {
+          font-size: 1.75rem;
+        }
+        .drop-zone {
+          padding: 2rem 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- 页头 Header -->
+      <header>
+        <div class="badge">
+          <i
+            data-lucide="cloud-upload"
+            style="width: 14px; height: 14px"
+          ></i>
+          OSS Web PostObject 直传
+        </div>
+        <h1>多模态文件上传中心</h1>
+        <p>支持极速前端直传至阿里云 OSS，避免服务端中转，安全高效</p>
+      </header>
+
+      <!-- 拖拽上传区域 Drop Zone -->
+      <div
+        class="drop-zone"
+        id="dropZone"
+      >
+        <div class="icon-container">
+          <i
+            data-lucide="upload-cloud"
+            style="width: 32px; height: 32px"
+          ></i>
+        </div>
+        <div class="drop-zone-text">
+          <h3>拖拽文件到此处，或点击选择</h3>
+          <p>支持 PNG, JPG, GIF, WebP 等丰富格式，最大支持 1 GB</p>
+        </div>
+        <button
+          class="btn-select"
+          type="button"
+        >
+          <i
+            data-lucide="folder-open"
+            style="width: 18px; height: 18px"
+          ></i>
+          选择本地文件
+        </button>
+        <input
+          id="fileInput"
+          type="file"
+          accept="image/*,video/*,application/pdf"
+        />
+      </div>
+
+      <!-- 进度条 Card -->
+      <div
+        class="progress-card"
+        id="progressCard"
+      >
+        <div class="progress-header">
+          <div class="file-info-short">
+            <i
+              data-lucide="file"
+              style="width: 16px; height: 16px; color: #818cf8"
+            ></i>
+            <span id="progressFileName">uploading_file.png</span>
+          </div>
+          <span
+            class="progress-status"
+            id="progressText"
+            >0%</span
+          >
+        </div>
+        <div class="progress-bar-bg">
+          <div
+            class="progress-bar-fill"
+            id="progressBarFill"
+          ></div>
+        </div>
+      </div>
+
+      <!-- 已上传文件展示 Gallery -->
+      <div class="gallery-section">
+        <div class="section-header">
+          <div class="section-title">
+            <i
+              data-lucide="image"
+              style="width: 20px; height: 20px; color: #818cf8"
+            ></i>
+            已上传文件列表
+          </div>
+        </div>
+        <div
+          class="file-grid"
+          id="fileGrid"
+        >
+          <!-- 动态新增上传文件卡片 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 全局 Toast 提示 -->
+    <div
+      class="toast"
+      id="toast"
+    >
+      <i
+        data-lucide="check-circle"
+        style="width: 18px; height: 18px; color: var(--success-color)"
+      ></i>
+      <span id="toastMsg">操作成功</span>
+    </div>
+
+    <script>
+      // 初始化 Lucide 图标
+      lucide.createIcons();
+
+      const fileInput = document.getElementById('fileInput');
+      const dropZone = document.getElementById('dropZone');
+      const progressCard = document.getElementById('progressCard');
+      const progressFileName = document.getElementById('progressFileName');
+      const progressText = document.getElementById('progressText');
+      const progressBarFill = document.getElementById('progressBarFill');
+      const fileGrid = document.getElementById('fileGrid');
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+
+      // 获取临时凭证与签名信息
+      async function getOSSInfo() {
+        return {
+          OSSAccessKeyId: 'LTAI5t6aZre427Yi4vxqjjVr',
+          Signature: 'NLfZfz3yRaNW1u/Yj894dzg5iCk=',
+          policy:
+            'eyJleHBpcmF0aW9uIjoiMjAyNi0wNy0yNlQwOTozODowNS44NzZaIiwiY29uZGl0aW9ucyI6W1siY29udGVudC1sZW5ndGgtcmFuZ2UiLDAsMTA0ODU3NjAwMF1dfQ==',
+          host: 'http://zsp-agent-bucket.oss-cn-beijing.aliyuncs.com',
+        };
+      }
+
+      // Toast 消息提示
+      function showToast(msg) {
+        toastMsg.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+      }
+
+      // 点击 Drop Zone 触发文件选择
+      dropZone.addEventListener('click', () => fileInput.click());
+
+      // 拖拽事件监听
+      ['dragenter', 'dragover'].forEach((eventName) => {
+        dropZone.addEventListener(
+          eventName,
+          (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+          },
+          false
+        );
+      });
+
+      ['dragleave', 'drop'].forEach((eventName) => {
+        dropZone.addEventListener(
+          eventName,
+          (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+          },
+          false
+        );
+      });
+
+      dropZone.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          handleUpload(files[0]);
+        }
+      });
+
+      fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+          handleUpload(fileInput.files[0]);
+        }
+      });
+
+      // 处理文件上传核心逻辑
+      async function handleUpload(file) {
+        try {
+          const ossInfo = await getOSSInfo();
+
+          // 展示进度卡片
+          progressFileName.textContent = file.name;
+          progressText.textContent = '0%';
+          progressBarFill.style.width = '0%';
+          progressCard.style.display = 'flex';
+
+          const formdata = new FormData();
+          formdata.append('key', file.name);
+          formdata.append('OSSAccessKeyId', ossInfo.OSSAccessKeyId);
+          formdata.append('policy', ossInfo.policy);
+          formdata.append('signature', ossInfo.Signature);
+          formdata.append('success_action_status', '200');
+          formdata.append('file', file);
+
+          const res = await axios.post(ossInfo.host, formdata, {
+            onUploadProgress: (progressEvent) => {
+              if (progressEvent.total) {
+                const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                progressBarFill.style.width = `${percent}%`;
+                progressText.textContent = `${percent}%`;
+              }
+            },
+          });
+
+          if (res.status === 200) {
+            progressText.textContent = '100% (完成)';
+            setTimeout(() => {
+              progressCard.style.display = 'none';
+            }, 800);
+
+            const fileUrl = ossInfo.host + '/' + encodeURIComponent(file.name);
+            addFileCard(file.name, fileUrl);
+            showToast('文件已成功直传至 OSS！');
+          }
+        } catch (err) {
+          console.error(err);
+          progressText.textContent = '上传失败';
+          progressBarFill.style.background = '#ef4444';
+          showToast('上传失败，请检查 OSS 签名或网络配置');
+        } finally {
+          fileInput.value = '';
+        }
+      }
+
+      // 添加已上传卡片到视图
+      function addFileCard(fileName, fileUrl) {
+        const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(fileName);
+
+        const card = document.createElement('div');
+        card.className = 'file-card';
+
+        const previewContent = isImage
+          ? `<img src="${fileUrl}" class="preview-img" alt="${fileName}" />`
+          : `<i data-lucide="file-text" style="width: 48px; height: 48px; color: #64748b;"></i>`;
+
+        card.innerHTML = `
+          <div class="preview-wrapper">
+            ${previewContent}
+          </div>
+          <div class="file-meta">
+            <div class="file-name" title="${fileName}">${fileName}</div>
+            <div class="file-footer">
+              <span class="status-tag">
+                <i data-lucide="check" style="width: 12px; height: 12px;"></i> 已同步 OSS
+              </span>
+              <button class="btn-copy" onclick="copyLink('${fileUrl}')">
+                <i data-lucide="copy" style="width: 14px; height: 14px;"></i> 复制链接
+              </button>
+            </div>
+          </div>
+        `;
+
+        fileGrid.prepend(card);
+        lucide.createIcons();
+      }
+
+      // 复制链接功能
+      window.copyLink = function (url) {
+        navigator.clipboard
+          .writeText(url)
+          .then(() => {
+            showToast('文件直链已复制到剪贴板！');
+          })
+          .catch((err) => {
+            console.error('复制失败:', err);
+          });
+      };
+    </script>
+  </body>
+</html>

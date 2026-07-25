@@ -1,0 +1,1122 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
+    <title>AI 创想画板 - Next-Gen AI Canvas</title>
+    <meta
+      name="description"
+      content="基于 Wan2.6 与 阿里云 OSS 的高性能多模态 AI 画板工作台"
+    />
+
+    <!-- 引入 Google Fonts & Axios & Lucide Icons -->
+    <link
+      rel="preconnect"
+      href="https://fonts.googleapis.com"
+    />
+    <link
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/axios@1.6.5/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+      :root {
+        --bg-main: #0b0f19;
+        --card-bg: rgba(18, 24, 38, 0.75);
+        --card-border: rgba(255, 255, 255, 0.08);
+        --card-border-hover: rgba(99, 102, 241, 0.4);
+        --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+        --accent-color: #6366f1;
+        --accent-hover: #4f46e5;
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --text-muted: #64748b;
+        --success-color: #10b981;
+        --error-color: #f43f5e;
+        --radius-lg: 20px;
+        --radius-md: 14px;
+        --radius-sm: 10px;
+        --shadow-glow: 0 0 35px rgba(99, 102, 241, 0.25);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family:
+          'Plus Jakarta Sans',
+          -apple-system,
+          BlinkMacSystemFont,
+          'PingFang SC',
+          'Microsoft YaHei',
+          sans-serif;
+        background-color: var(--bg-main);
+        color: var(--text-primary);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      /* 极光霓虹背景 */
+      body::before {
+        content: '';
+        position: fixed;
+        top: -10%;
+        left: 15%;
+        width: 550px;
+        height: 550px;
+        background: radial-gradient(
+          circle,
+          rgba(99, 102, 241, 0.18) 0%,
+          rgba(168, 85, 247, 0.05) 55%,
+          transparent 70%
+        );
+        filter: blur(90px);
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      body::after {
+        content: '';
+        position: fixed;
+        bottom: -10%;
+        right: 15%;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(
+          circle,
+          rgba(236, 72, 153, 0.15) 0%,
+          rgba(99, 102, 241, 0.04) 55%,
+          transparent 70%
+        );
+        filter: blur(90px);
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      .app {
+        width: 100%;
+        max-width: 680px;
+        min-height: 100vh;
+        position: relative;
+        padding-bottom: 96px;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* 头部 Sticky Header */
+      .header {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background: rgba(11, 15, 25, 0.82);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-bottom: 1px solid var(--card-border);
+        padding: 1rem 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .header h1 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .header .back {
+        position: absolute;
+        left: 1rem;
+        border: 1px solid var(--card-border);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-primary);
+        font-size: 1rem;
+        border-radius: var(--radius-sm);
+        padding: 0.3rem 0.6rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        transition: all 0.2s ease;
+      }
+
+      .header .back:hover {
+        background: rgba(99, 102, 241, 0.2);
+        border-color: rgba(99, 102, 241, 0.4);
+      }
+
+      /* View 视图控制 */
+      .view {
+        display: none;
+        animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .view.active {
+        display: block;
+      }
+
+      /* 列表 View - 作品画廊 */
+      .list {
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .card {
+        background: var(--card-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius-md);
+        padding: 1rem;
+        display: flex;
+        gap: 1rem;
+        cursor: pointer;
+        position: relative;
+        transition: all 0.25s ease;
+      }
+
+      .card:hover {
+        border-color: var(--card-border-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      }
+
+      .thumb {
+        width: 90px;
+        height: 90px;
+        border-radius: var(--radius-sm);
+        object-fit: cover;
+        background: #141a29;
+        flex-shrink: 0;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .card-body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding-right: 2rem;
+      }
+
+      .card-prompt {
+        font-size: 0.95rem;
+        font-weight: 600;
+        line-height: 1.4;
+        color: var(--text-primary);
+        display: -webkit-box;
+        line-clamp: 2;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .card-meta {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .card-time {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+
+      .card-menu {
+        position: absolute;
+        bottom: 0.75rem;
+        right: 0.75rem;
+        border: 1px solid transparent;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-muted);
+        border-radius: var(--radius-sm);
+        padding: 0.25rem 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .card-menu:hover {
+        color: var(--error-color);
+        background: rgba(244, 63, 94, 0.15);
+        border-color: rgba(244, 63, 94, 0.3);
+      }
+
+      .empty {
+        text-align: center;
+        padding: 4rem 1.5rem;
+        background: var(--card-bg);
+        border: 1px dashed var(--card-border);
+        border-radius: var(--radius-lg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--text-secondary);
+      }
+
+      .empty strong {
+        font-size: 1.1rem;
+        color: var(--text-primary);
+      }
+
+      /* 创作 View */
+      .create {
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+      }
+
+      .panel {
+        background: var(--card-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius-lg);
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+      }
+
+      .label {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .textarea-wrap {
+        position: relative;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 110px;
+        background: rgba(11, 15, 25, 0.6);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius-md);
+        padding: 0.85rem 1rem;
+        font-size: 0.95rem;
+        color: var(--text-primary);
+        line-height: 1.5;
+        resize: vertical;
+        font-family: inherit;
+        outline: none;
+        transition: border-color 0.2s ease;
+      }
+
+      textarea:focus {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+      }
+
+      .counter {
+        position: absolute;
+        right: 0.85rem;
+        bottom: 0.85rem;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+
+      /* 快捷灵感 Tag 颗粒 */
+      .prompt-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.25rem;
+      }
+
+      .tag-item {
+        font-size: 0.78rem;
+        padding: 0.3rem 0.65rem;
+        background: rgba(99, 102, 241, 0.08);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        color: #818cf8;
+        border-radius: 9999px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+      }
+
+      .tag-item:hover {
+        background: var(--accent-gradient);
+        color: #ffffff;
+        border-color: transparent;
+        transform: translateY(-1px);
+      }
+
+      /* 上传图片区域 */
+      .upload-area {
+        display: flex;
+        gap: 1rem;
+        align-items: stretch;
+      }
+
+      .upload-preview {
+        width: 100px;
+        height: 100px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--accent-color);
+        position: relative;
+        overflow: hidden;
+        display: none;
+        flex-shrink: 0;
+      }
+
+      .upload-preview.show {
+        display: block;
+      }
+
+      .upload-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .upload-preview .remove {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(244, 63, 94, 0.85);
+        color: #fff;
+        font-size: 14px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .upload-trigger {
+        flex: 1;
+        min-height: 100px;
+        background: rgba(11, 15, 25, 0.4);
+        border: 2px dashed var(--card-border);
+        border-radius: var(--radius-md);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        cursor: pointer;
+        color: var(--text-secondary);
+        padding: 1rem;
+        text-align: center;
+        transition: all 0.25s ease;
+      }
+
+      .upload-trigger:hover {
+        border-color: var(--accent-color);
+        background: rgba(99, 102, 241, 0.05);
+        color: var(--text-primary);
+      }
+
+      .upload-trigger span {
+        font-size: 0.9rem;
+        font-weight: 600;
+      }
+
+      .upload-trigger small {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+
+      .upload-input {
+        display: none;
+      }
+
+      .submit {
+        width: 100%;
+        border: none;
+        border-radius: var(--radius-md);
+        background: var(--accent-gradient);
+        color: #fff;
+        font-size: 1.05rem;
+        font-weight: 700;
+        padding: 0.9rem;
+        cursor: pointer;
+        box-shadow: var(--shadow-glow);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+        transition: all 0.2s ease;
+      }
+
+      .submit:hover {
+        opacity: 0.95;
+        transform: scale(1.01);
+      }
+
+      .submit:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      /* 状态与已上传链接 */
+      .status {
+        font-size: 0.85rem;
+        color: #818cf8;
+        text-align: center;
+        min-height: 22px;
+        word-break: break-all;
+        font-weight: 500;
+      }
+
+      .status.error {
+        color: var(--error-color);
+      }
+
+      .upload-url {
+        padding: 0.85rem 1rem;
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.25);
+        border-radius: var(--radius-md);
+        font-size: 0.8rem;
+        color: var(--success-color);
+        line-height: 1.5;
+        word-break: break-all;
+      }
+
+      .upload-url strong {
+        display: block;
+        font-size: 0.75rem;
+        margin-bottom: 0.2rem;
+      }
+
+      /* 结果面板 Result Panel */
+      .result-img {
+        width: 100%;
+        border-radius: var(--radius-md);
+        display: block;
+        background: #141a29;
+        border: 1px solid var(--card-border);
+      }
+
+      .save-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--card-border);
+        color: var(--text-primary);
+        padding: 0.65rem 1rem;
+        border-radius: var(--radius-md);
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s ease;
+      }
+
+      .save-link:hover {
+        background: rgba(99, 102, 241, 0.2);
+        border-color: rgba(99, 102, 241, 0.4);
+      }
+
+      /* 底部 Nav */
+      .nav {
+        position: fixed;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        max-width: 680px;
+        background: rgba(11, 15, 25, 0.85);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-top: 1px solid var(--card-border);
+        display: flex;
+        padding: 0.65rem 0 calc(0.65rem + env(safe-area-inset-bottom));
+        z-index: 20;
+      }
+
+      .nav button {
+        flex: 1;
+        border: none;
+        background: none;
+        padding: 0.4rem;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.35rem;
+        transition: all 0.2s ease;
+      }
+
+      .nav button.active {
+        color: var(--accent-color);
+        font-weight: 700;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <!-- 头部 Header -->
+      <header class="header">
+        <button
+          class="back"
+          id="backBtn"
+          hidden
+          aria-label="返回"
+        >
+          <i
+            data-lucide="chevron-left"
+            style="width: 18px; height: 18px"
+          ></i>
+          返回
+        </button>
+        <h1>
+          <i
+            data-lucide="sparkles"
+            style="width: 20px; height: 20px; color: #818cf8"
+          ></i>
+          AI 创想画板
+        </h1>
+      </header>
+
+      <!-- 画廊列表 View -->
+      <section
+        class="view active"
+        id="listView"
+      >
+        <div
+          class="list"
+          id="listContainer"
+        ></div>
+      </section>
+
+      <!-- 创作 View -->
+      <section
+        class="view"
+        id="createView"
+      >
+        <div class="create">
+          <!-- Prompt 输入面板 -->
+          <div class="panel">
+            <div class="label">
+              <span>输入画作描述 (Prompt)</span>
+              <span class="counter"><span id="charCount">0</span>/200</span>
+            </div>
+            <div class="textarea-wrap">
+              <textarea
+                id="prompt"
+                maxlength="200"
+                placeholder="描述你想生成的 AI 画面，例如：赛博朋克风格的未来霓虹城市，雨夜光影..."
+              ></textarea>
+            </div>
+            <!-- 快捷灵感 Tag 推荐 -->
+            <div class="prompt-tags">
+              <span
+                class="tag-item"
+                onclick="applyTag('赛博朋克风格的未来霓虹城市，雨夜光影，高清细节')"
+                >✨ 赛博朋克城市</span
+              >
+              <span
+                class="tag-item"
+                onclick="applyTag('科幻宇宙空间站，星云发光，写实光照，8k分辨率')"
+                >🚀 科幻空间站</span
+              >
+              <span
+                class="tag-item"
+                onclick="applyTag('水彩风格的唯美日落海滩，浪花朵朵，梦幻光影')"
+                >🎨 唯美水彩海滩</span
+              >
+              <span
+                class="tag-item"
+                onclick="applyTag('发光机械猫手办，盲盒风格，C4D渲染，极简背景')"
+                >🐱 赛博发光机械猫</span
+              >
+            </div>
+          </div>
+
+          <!-- 上传参考图片面板 -->
+          <div class="panel">
+            <div class="label">
+              <span>上传参考图（可选：图生图模式）</span>
+            </div>
+            <div class="upload-area">
+              <div
+                class="upload-preview"
+                id="previewBox"
+              >
+                <img
+                  id="previewImg"
+                  alt="预览图"
+                />
+                <button
+                  class="remove"
+                  id="removeImg"
+                  type="button"
+                  aria-label="移除"
+                >
+                  <i
+                    data-lucide="x"
+                    style="width: 14px; height: 14px"
+                  ></i>
+                </button>
+              </div>
+              <label
+                class="upload-trigger"
+                id="uploadTrigger"
+              >
+                <i
+                  data-lucide="image-plus"
+                  style="width: 28px; height: 28px; color: #818cf8"
+                ></i>
+                <span>点击或拖拽上传参考图</span>
+                <small>支持 JPG、PNG、WebP，最大 10MB（自动计算 Hash 秒传）</small>
+                <input
+                  class="upload-input"
+                  id="fileInput"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                />
+              </label>
+            </div>
+          </div>
+
+          <!-- 生成按钮与状态 -->
+          <button
+            class="submit"
+            id="generateBtn"
+          >
+            <i
+              data-lucide="wand-2"
+              style="width: 20px; height: 20px"
+            ></i>
+            立即生成 AI 画作
+          </button>
+
+          <div
+            class="upload-url"
+            id="uploadUrlBox"
+            hidden
+          >
+            <strong
+              ><i
+                data-lucide="check-circle-2"
+                style="width: 14px; height: 14px"
+              ></i>
+              已成功上传 OSS：</strong
+            >
+            <span id="uploadUrlText"></span>
+          </div>
+
+          <div
+            class="status"
+            id="status"
+          ></div>
+
+          <!-- 结果展示面板 -->
+          <div
+            class="panel"
+            id="resultPanel"
+            hidden
+          >
+            <div class="label">
+              <span>生成结果画作</span>
+            </div>
+            <img
+              class="result-img"
+              id="resultImg"
+              alt="生成结果"
+            />
+            <a
+              class="save-link"
+              id="saveLink"
+              href="#"
+              download="ai-canvas.png"
+            >
+              <i
+                data-lucide="download"
+                style="width: 18px; height: 18px"
+              ></i>
+              保存画作到本地
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 底部 Tab Nav -->
+      <nav class="nav">
+        <button
+          class="active"
+          id="navList"
+          type="button"
+        >
+          <i
+            data-lucide="grid"
+            style="width: 20px; height: 20px"
+          ></i>
+          画廊列表
+        </button>
+        <button
+          id="navCreate"
+          type="button"
+        >
+          <i
+            data-lucide="plus-circle"
+            style="width: 20px; height: 20px"
+          ></i>
+          开始创作
+        </button>
+      </nav>
+    </div>
+
+    <script>
+      // 初始化 Lucide 图标
+      lucide.createIcons();
+
+      const $ = (sel) => document.querySelector(sel);
+      const listContainer = $('#listContainer');
+      const listView = $('#listView');
+      const createView = $('#createView');
+      const backBtn = $('#backBtn');
+      const navList = $('#navList');
+      const navCreate = $('#navCreate');
+      const promptEl = $('#prompt');
+      const charCount = $('#charCount');
+      const fileInput = $('#fileInput');
+      const previewBox = $('#previewBox');
+      const previewImg = $('#previewImg');
+      const uploadTrigger = $('#uploadTrigger');
+      const removeImg = $('#removeImg');
+      const generateBtn = $('#generateBtn');
+      const statusEl = $('#status');
+      const resultPanel = $('#resultPanel');
+      const resultImg = $('#resultImg');
+      const saveLink = $('#saveLink');
+      const uploadUrlBox = $('#uploadUrlBox');
+      const uploadUrlText = $('#uploadUrlText');
+
+      let uploadedImageUrl = null;
+      let pendingFile = null;
+      let uploading = false;
+      let generating = false;
+
+      // 快捷填入灵感词 Tag
+      window.applyTag = function (text) {
+        promptEl.value = text;
+        charCount.textContent = text.length;
+      };
+
+      function formatSize(size) {
+        if (!size) return '1024 × 1024';
+        if (size.includes('*')) return size.replace('*', ' × ');
+        return size;
+      }
+
+      function formatTime(iso) {
+        const date = new Date(iso);
+        const now = new Date();
+        const isToday = date.toDateString() === now.toDateString();
+        const yesterday = new Date(now);
+        yesterday.setDate(now.getDate() - 1);
+        const isYesterday = date.toDateString() === yesterday.toDateString();
+        const hh = String(date.getHours()).padStart(2, '0');
+        const mm = String(date.getMinutes()).padStart(2, '0');
+        if (isToday) return `${hh}:${mm}`;
+        if (isYesterday) return `昨天 ${hh}:${mm}`;
+        const mo = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        return `${mo}-${dd} ${hh}:${mm}`;
+      }
+
+      function showView(name) {
+        const isList = name === 'list';
+        listView.classList.toggle('active', isList);
+        createView.classList.toggle('active', !isList);
+        navList.classList.toggle('active', isList);
+        navCreate.classList.toggle('active', !isList);
+        backBtn.hidden = isList;
+        if (isList) loadList();
+      }
+
+      async function loadList() {
+        try {
+          const res = await fetch('/ai/image/list');
+          const items = await res.json();
+          if (!items.length) {
+            listContainer.innerHTML = `
+              <div class="empty">
+                <i data-lucide="palette" style="width: 48px; height: 48px; color: #64748b;"></i>
+                <strong>还没有创作作品</strong>
+                <p>去「开始创作」页面输入你的第一个 AI 灵感吧</p>
+              </div>`;
+            lucide.createIcons();
+            return;
+          }
+          listContainer.innerHTML = items
+            .map(
+              (item) => `
+          <article class="card" data-id="${item.id}">
+            <img class="thumb" src="${item.url}" alt="" loading="lazy" />
+            <div class="card-body">
+              <div class="card-time">${formatTime(item.createdAt)}</div>
+              <div class="card-prompt">${escapeHtml(item.prompt)}</div>
+              <div class="card-meta">
+                <span>${item.mode === 'edit' ? '🖼️ 图生图' : '✍️ 文生图'}</span>
+                <span>${formatSize(item.size)}</span>
+              </div>
+              <button class="card-menu" type="button" data-delete="${item.id}" aria-label="删除">
+                <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
+              </button>
+            </div>
+          </article>
+        `
+            )
+            .join('');
+          lucide.createIcons();
+        } catch {
+          listContainer.innerHTML = `
+            <div class="empty">
+              <i data-lucide="alert-circle" style="width: 48px; height: 48px; color: var(--error-color);"></i>
+              <strong>加载失败</strong>
+              <p>请确认 NestJS 后端服务已正常启动</p>
+            </div>`;
+          lucide.createIcons();
+        }
+      }
+
+      function escapeHtml(str) {
+        return str.replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              '&': '&amp;',
+              '<': '&lt;',
+              '>': '&gt;',
+              '"': '&quot;',
+              "'": '&#39;',
+            })[c]
+        );
+      }
+
+      listContainer.addEventListener('click', async (e) => {
+        const deleteBtn = e.target.closest('[data-delete]');
+        if (deleteBtn) {
+          const deleteId = deleteBtn.dataset.delete;
+          e.stopPropagation();
+          if (!confirm('确定删除这条 AI 画作记录？')) return;
+          await fetch(`/ai/image/${deleteId}`, { method: 'DELETE' });
+          loadList();
+          return;
+        }
+        const card = e.target.closest('.card');
+        if (!card) return;
+        const id = card.dataset.id;
+        const items = await fetch('/ai/image/list').then((r) => r.json());
+        const item = items.find((i) => i.id === id);
+        if (!item) return;
+        showView('create');
+        promptEl.value = item.prompt;
+        charCount.textContent = item.prompt.length;
+        resultPanel.hidden = false;
+        resultImg.src = item.url;
+        saveLink.href = item.url;
+      });
+
+      promptEl.addEventListener('input', () => {
+        charCount.textContent = promptEl.value.length;
+      });
+
+      removeImg.addEventListener('click', (e) => {
+        e.preventDefault();
+        uploadedImageUrl = null;
+        pendingFile = null;
+        fileInput.value = '';
+        previewBox.classList.remove('show');
+        uploadTrigger.style.display = '';
+        uploadUrlBox.hidden = true;
+        uploadUrlText.textContent = '';
+      });
+
+      function showUploadUrl(url) {
+        uploadUrlBox.hidden = false;
+        uploadUrlText.textContent = url;
+      }
+
+      // 计算文件 SHA-256 Hash
+      async function calculateFileHash(file) {
+        const arrayBuffer = await file.arrayBuffer();
+        const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+      }
+
+      async function getOSSInfo(hash, ext) {
+        const { data } = await axios.post('/ai/oss/upload-signature', { hash, ext });
+        return data;
+      }
+
+      async function uploadToOSS(file) {
+        const hash = await calculateFileHash(file);
+        const ext = file.name.match(/\.[^.]+$/)?.[0] || '.jpg';
+        const ossInfo = await getOSSInfo(hash, ext);
+
+        // 如果服务端开启了文件去重/秒传，且已存在该文件，则直接返回已有 URL
+        if (ossInfo.isExist) {
+          return ossInfo.url;
+        }
+
+        const formdata = new FormData();
+        formdata.append('key', ossInfo.key);
+        formdata.append('OSSAccessKeyId', ossInfo.OSSAccessKeyId);
+        formdata.append('policy', ossInfo.policy);
+        formdata.append('signature', ossInfo.Signature);
+        formdata.append('success_action_status', '200');
+        formdata.append('file', file);
+
+        try {
+          await fetch(ossInfo.host, { method: 'POST', body: formdata });
+        } catch {}
+
+        return ossInfo.url;
+      }
+
+      async function ensureUploaded() {
+        if (uploadedImageUrl) return uploadedImageUrl;
+        if (!pendingFile) return null;
+
+        uploading = true;
+        statusEl.textContent = '上传图片中…';
+        statusEl.classList.remove('error');
+        try {
+          uploadedImageUrl = await uploadToOSS(pendingFile);
+          showUploadUrl(uploadedImageUrl);
+          previewImg.src = URL.createObjectURL(pendingFile);
+          previewBox.classList.add('show');
+          uploadTrigger.style.display = 'none';
+          return uploadedImageUrl;
+        } finally {
+          uploading = false;
+        }
+      }
+
+      async function generateImage() {
+        const prompt = promptEl.value.trim();
+        if (!prompt) {
+          statusEl.textContent = '请输入描述内容';
+          statusEl.classList.add('error');
+          return;
+        }
+
+        generating = true;
+        generateBtn.disabled = true;
+        statusEl.textContent = '✨ AI 绘图中，请稍候（约 1–3 分钟）…';
+        statusEl.classList.remove('error');
+        resultPanel.hidden = true;
+
+        try {
+          const imageUrl = await ensureUploaded();
+          const body = { prompt };
+          if (imageUrl) body.imageUrl = imageUrl;
+
+          const { data } = await axios.post('/ai/image', body);
+          resultPanel.hidden = false;
+          resultImg.src = data.url;
+          saveLink.href = data.url;
+          statusEl.textContent = '';
+        } catch (err) {
+          statusEl.textContent = err.response?.data?.message || err.message || '生成失败';
+          statusEl.classList.add('error');
+        } finally {
+          generating = false;
+          generateBtn.disabled = false;
+        }
+      }
+
+      fileInput.addEventListener('change', async () => {
+        const file = fileInput.files?.[0];
+        if (!file) return;
+        if (file.size > 10 * 1024 * 1024) {
+          alert('图片不能超过 10MB');
+          fileInput.value = '';
+          return;
+        }
+
+        pendingFile = file;
+        uploadedImageUrl = null;
+        uploadUrlBox.hidden = true;
+        statusEl.classList.remove('error');
+
+        try {
+          uploadedImageUrl = await ensureUploaded();
+          if (promptEl.value.trim()) {
+            await generateImage();
+          } else {
+            statusEl.textContent = '图片已上传完成，填写提示词后点击生成';
+          }
+        } catch (err) {
+          statusEl.textContent = err.response?.data?.message || err.message || '上传失败';
+          statusEl.classList.add('error');
+        }
+      });
+
+      generateBtn.addEventListener('click', () => generateImage());
+
+      navList.addEventListener('click', () => showView('list'));
+      navCreate.addEventListener('click', () => showView('create'));
+      backBtn.addEventListener('click', () => showView('list'));
+
+      loadList();
+    </script>
+  </body>
+</html>
